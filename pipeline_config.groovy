@@ -10,10 +10,8 @@ application_environments{
     }
     prod{
         ignore = true
-        ecr_repo_name = "my-repo-ecr-qa"
     }
     dev{
         ignore = true
-        ecr_repo_name = "my-repo-ecr-dev"
     }
 }
