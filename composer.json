@@ -1,7 +1,9 @@
 {
     "name": "openpay/woocommerce-cards",
     "description": "Credit card payment integration for woocommerce",
-    "require": {},
+    "require-dev": {
+        "phpunit/phpunit": "^9"
+    },
     "authors": [
         {
             "name": "Openpay",
