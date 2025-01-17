@@ -1,0 +1,78 @@
+<?php
+/**
+* Plugin Name: Openpay Cards Payments
+* Plugin URI: http://www.openpay.mx/docs/plugins/woocommerce.html
+* Description: Provides a credit card payment method with Openpay for WooCommerce.
+* Version: 1.0.0
+* Author: Openpay
+* Author URI: http://www.openpay.mx
+* Developer: Openpay
+* Text Domain: openpay-cards
+*
+* WC requires at least: 3.0
+* WC tested up to: 9.2.3
+*
+* License: GNU General Public License v3.0
+* License URI: http://www.gnu.org/licenses/gpl-3.0.html
+* 
+* Openpay Docs: http://www.openpay.mx/docs/
+*/
+
+ /*
+ * This action hook registers WC_Openpay_Gateway class as a WooCommerce payment gateway
+ */
+add_filter( 'woocommerce_payment_gateways', 'openpay_add_gateway_class' );
+/*
+ * WC_Openpay_Gateway Class file is called by openpay_init_gateway function
+ */
+add_action( 'plugins_loaded', 'openpay_init_gateway' );
+/*
+ * This action registers WC_Openpay_Gateway_Blocks_Support class as a WC Payment Block
+ */
+add_action( 'woocommerce_blocks_loaded', 'openpay_blocks_support' );
+/*
+ * 
+ */
+add_action( 'before_woocommerce_init', 'openpay_checkout_blocks_compatibility' );
+
+add_action('admin_enqueue_scripts', 'openpay_cards_admin_enqueue');
+
+
+
+function openpay_add_gateway_class( $gateways ) {
+	$gateways[] = 'WC_Openpay_Gateway'; // Gateway Class Name
+	return $gateways;
+}
+
+function openpay_init_gateway() {
+    if (class_exists('WC_Payment_Gateway')) {
+        require_once('class-wc-openpay-gateway.php');
+    }
+}
+
+function openpay_cards_admin_enqueue($hook) {
+	wp_enqueue_script('openpay_cards_admin_form', plugins_url('assets/js/admin.js', __FILE__), array('jquery'), '1.0.2' , true);
+}
+
+function openpay_blocks_support() {
+	require_once __DIR__ . '/includes/class-wc-openpay-gateway-blocks-support.php';
+
+	add_action(
+		'woocommerce_blocks_payment_method_type_registration',
+		function( Automattic\WooCommerce\Blocks\Payments\PaymentMethodRegistry $payment_method_registry ) {
+			$payment_method_registry->register( new WC_Openpay_Gateway_Blocks_Support );
+		}
+	);
+}
+
+function openpay_checkout_blocks_compatibility() {
+
+    if( class_exists( '\Automattic\WooCommerce\Utilities\FeaturesUtil' ) ) {
+        \Automattic\WooCommerce\Utilities\FeaturesUtil::declare_compatibility(
+				'cart_checkout_blocks',
+				__FILE__,
+				true // true (compatible, default) or false (not compatible)
+			);
+    }
+		
+}
