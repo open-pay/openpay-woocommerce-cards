@@ -3,6 +3,24 @@ import { decodeEntities } from '@wordpress/html-entities';
 
 const { getSetting } = window.wc.wcSettings
 const settings = getSetting( 'wc_openpay_gateway_data', {} )
+
+/*-----------------------------------------------------
+| Adding raw settings
+|Adding raw settings 
+| save_cc: No guardar == 0, Guardar y no solicitar cvv == 1, Guardar y solicitar cvv == 2
+--------------------------------------------------------*/
+settings.save_cc = 1;
+settings.country_code = 'MX'; // MX, CO, PE
+settings.isGuest = false; //Configuracion para verificar si es ivitado o no;
+settings.cc_options = [
+    {name: '4111XXXX1111', value: 'kstraxbhst7yh'},
+    {name: '4242XXXX4242', value: 'kftrafffst7yh'},
+    {name: '4241XXXX4110', value: 'k7trauiyst8tr'},
+    {name: '5300XXXX4100', value: 'kotr567ujhdcv'}
+]
+console.log(settings);
+
+
 const label = decodeEntities( settings.title )
 
 
@@ -14,6 +32,7 @@ const Form = ( props ) => {
     const [openpayCardNumber, setOpenpayCardNumber] = useState('');
     const [openpayCardExpiry, setOpenpayCardExpiry] = useState('');
     const [openpayCardCvc,    setOpenpayCardCvc] = useState('');
+    const [selectedCard, setSelectedCard] = useState(0);
     var openpayToken = '';
     var openpayTokenizedCard = '';
     
@@ -45,6 +64,22 @@ const Form = ( props ) => {
             }    
         };
 
+        //Data cuando selecciona una tarjeta con cvv
+        /*
+            var data = {
+            openpay_token: selectedCard,
+            cvv2: openpayCardCvc,
+            address:{
+                line1:billing.billingAddress.address_1,
+                line2:billing.billingAddress.address_2,
+                state:billing.billingAddress.state,
+                city:billing.billingAddress.city,
+                postal_code:billing.billingAddress.postcode,
+                country_code:billing.billingAddress.country
+            }    
+        };
+        */ 
+
         console.log(data);
 
         const result = await tokenRequestWrapper(data);
@@ -62,7 +97,14 @@ const Form = ( props ) => {
         });
     }
 
-
+    const verifySelectedCard = (event) => {
+        console.log(event.target.value);
+        if(event.target.value != 0) {
+            setSelectedCard(event.target.value);
+        } else {
+            setSelectedCard(event.target.value);
+        }
+    }
     useEffect( () => {
 		const unsubscribe = onPaymentSetup( async () => {
 
@@ -114,8 +156,27 @@ const Form = ( props ) => {
 	//return decodeEntities( Form || '' );
     //return Form;
     return (
-        
         <div id="payment_form_openpay_cards" style={{ marginBottom: '20px', display: 'flex', flexWrap: 'wrap', gap: '0 16px', justifyContent: 'space-between'}}>
+            {settings.isGuest == false ? 
+            <div class="wc-blocks-components-select is-active" style={{flex: '0 0 100%'}}>
+                <div class="wc-blocks-components-select__container">
+                    <label class="wc-blocks-components-select__label" for="openpaySavedCard">Selecciona la tarjeta</label>
+                    <select class="wc-blocks-components-select__select"
+                        onChange={verifySelectedCard}
+                        name="openpaySavedCard"
+                        id="openpaySavedCard"
+                        placeholder="Selecciona la tarjeta"
+                    >
+                        <option value="0" selected="selected"> Selecciona una tarjeta </option>
+                        {
+                            settings.cc_options.map( (card, index ) => {
+                                return (<option key={index} value={card.value}> {card.name} </option>)
+                            })
+                        }
+                    </select>
+                </div>
+            </div> : null}
+            { selectedCard == 0 ? 
             <div class="wc-block-components-text-input is-active" style={{flex: '0 0 100%'}}>
                 <input 
                     id="openpay-holder-name"
@@ -129,8 +190,9 @@ const Form = ( props ) => {
                     <label for="openpay-holder-name">Nombre del títular
                         <span class="required">*</span>
                     </label>
-            </div>
-            <div class="wc-block-components-text-input is-active" style={{flex: '0 0 100%'}} >
+            </div> : null }
+            { selectedCard == 0 ?
+                <div class="wc-block-components-text-input is-active" style={{flex: '0 0 100%'}} >
                 <label for="openpay-card-number">Número de tarjeta <span class="required">*</span></label>
                 <input 
                  id="openpay-card-number"
@@ -143,7 +205,8 @@ const Form = ( props ) => {
                  autocomplete="off" 
                  placeholder="•••• •••• •••• ••••"
                  data-openpay-card="card_number" />
-            </div>
+            </div> : null }
+            { selectedCard == 0 ?
             <div class="wc-block-components-text-input is-active" style={{flex: '1 0 calc(50% - 12px)'}}>
                 <label for="openpay-card-expiry">Expira (MM/AA) <span class="required">*</span></label>
                 <input 
@@ -157,7 +220,8 @@ const Form = ( props ) => {
                     placeholder="MM / AA" 
                     maxlength="4" 
                     data-openpay-card="expiration_year" />
-            </div>
+            </div> : null }
+            { selectedCard != 0 && settings.save_cc == 1  && settings.country_code == 'PE' ? null :
             <div class="wc-block-components-text-input is-active" style={{flex: '1 0 calc(50% - 12px)'}}>
                 <label for="openpay-card-cvc">CVV <span class="required">*</span></label>
                 <input 
@@ -171,17 +235,17 @@ const Form = ( props ) => {
                     placeholder="CVC"
                     maxlength="4" 
                     data-openpay-card="cvv2" />
-            </div>        
-            <div class="wc-block-components-text-input is-active" style={{ marginBottom: '20px' }} >
+            </div> } 
+            { settings.save_cc == 0 ? <div class="wc-block-components-checkbox is-active" style={{ marginBottom: '20px' }} >
                 <label for="save_cc" class="label">
-                    <div class="tooltip">
-                    <input type="checkbox" name="save_cc" id="save_cc" />
+                    <input class="wc-block-components-checkbok__input" type="checkbox" name="save_cc" id="save_cc" />
                     <span >Guardar tarjeta</span>
+                    { /* 
                     <img alt="" src="<?php echo $this->images_dir ?>tooltip_symbol.svg"></img>
                     <span class="tooltiptext" >Al guardar los datos de tu tarjeta agilizarás tus pagos futuros y podrás usarla como método de pago guardado.</span>
-                    </div>
+                    */}
                 </label>
-            </div>
+            </div> : null } 
         </div>
     );
 };
