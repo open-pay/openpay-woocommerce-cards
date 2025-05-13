@@ -1,5 +1,6 @@
 jQuery(document).ready(function () {
     var country = jQuery('#woocommerce_openpay_cards_country').val();
+    showOrHideElements(country)
 
     jQuery('#woocommerce_wc_openpay_gateway_country').change(function () {
         var country = jQuery(this).val();
@@ -7,6 +8,16 @@ jQuery(document).ready(function () {
 
         showOrHideElements(country)
     });
+
+    function showOrHideElements (country){
+        if(country == 'PE'){
+            jQuery("#woocommerce_wc_openpay_gateway_save_card_mode option[value='2']").show();
+        }
+        if(country != 'PE'){
+            jQuery("#woocommerce_wc_openpay_gateway_save_card_mode option[value='2']").hide();
+        }
+    }
+    
 
     if(jQuery("#woocommerce_wc_openpay_gateway_sandbox").length){
         is_sandbox();

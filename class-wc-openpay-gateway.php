@@ -1,13 +1,23 @@
 <?php
-if (file_exists(dirname(__FILE__) . '/lib/openpay/Openpay.php')) {
-    require_once(dirname(__FILE__) . '/lib/openpay/Openpay.php');
-}
-
 if(!class_exists('Utils')) {
     require_once(dirname(__FILE__) . "/includes/class-wc-openpay-utils.php");
 }
 
-use Openpay\Data\Openpay as Openpay;
+if(!class_exists('WC_Openpay_Client')) {
+    require_once(dirname(__FILE__) . "/includes/class-wc-openpay-client.php");
+}
+
+if(!class_exists('WC_Openpay_Customer_Service')) {
+    require_once(dirname(__FILE__) . "/services/class-wc-openpay-customer-service.php");
+}
+
+if(!class_exists('WC_Openpay_Charge_Service')) {
+    require_once(dirname(__FILE__) . "/services/class-wc-openpay-charge-service.php");
+}
+
+if(!class_exists('WC_Openpay_Cards_Service')) {
+    require_once(dirname(__FILE__) . "/services/class-wc-openpay-cards-service.php");
+}
 
  Class WC_Openpay_Gateway extends WC_Payment_Gateway{
     /**
@@ -20,6 +30,13 @@ use Openpay\Data\Openpay as Openpay;
     protected $public_key;
     protected $order;
     protected $logger;
+    protected $openpay;
+    protected $save_card_mode;
+
+    protected $save_cc = false;
+    protected $save_cc_option = '';
+    protected $cc_options;
+    protected $can_save_cc;
 
  	public function __construct() {
         $this->id = 'wc_openpay_gateway'; // payment gateway plugin ID
@@ -41,6 +58,13 @@ use Openpay\Data\Openpay as Openpay;
         $this->merchant_id = $this->get_option( 'merchant_id' );
         $this->private_key = $this->sandbox ? $this->get_option( 'test_private_key' ) : $this->get_option( 'live_private_key' );
         $this->public_key = $this->sandbox ? $this->get_option( 'test_public_key' ) : $this->get_option( 'live_public_key' );
+        $this->openpay = WC_Openpay_Client::getOpenpayInstance($this->sandbox, $this->merchant_id, $this->private_key, $this->country);
+        $this->save_card_mode = $this->get_option( 'save_card_mode' );
+
+        $save_cc = isset($this->settings['save_cc']) ? (strcmp($this->settings['save_cc'], '0') != 0) : false;
+        $this->save_cc = $save_cc;
+        $this->save_cc_option = $this->settings['save_cc'];
+        $this->can_save_cc = $this->save_cc && is_user_logged_in();
 
         // This action hook saves the settings
         add_action( 'woocommerce_update_options_payment_gateways_' . $this->id, array( $this, 'process_admin_options' ) );
@@ -80,24 +104,36 @@ use Openpay\Data\Openpay as Openpay;
                 'desc_tip'    => true,
             ),
             'merchant_id' => array(
-                'title'       => 'Merchant ID',
+                'title'       => 'ID de comercio',
                 'type'        => 'text'
             ),
             'live_public_key' => array(
-                'title'       => 'Live Public Key',
+                'title'       => 'Llave publica (Producción)',
                 'type'        => 'text'
             ),
             'live_private_key' => array(
-                'title'       => 'Live Private Key',
+                'title'       => 'Llave secreta (Producción)',
                 'type'        => 'password'
             ),
             'test_public_key' => array(
-                'title'       => 'Sandbox Public Key',
+                'title'       => 'Llave publica (Sandbox)',
                 'type'        => 'text'
             ),
             'test_private_key' => array(
-                'title'       => 'Sandbox Private Key',
+                'title'       => 'Llave secreta (Sandbox)',
                 'type'        => 'password',
+            ),
+            'save_card_mode' => array(
+                'title' => __('Guardar tarjetas', 'woothemes'),
+                'type' => 'select',
+                'description' => __('Permite a los usuarios registrar tarjetas para agilizar futuras compras.<br><br>La opción "Guardar y no Solicitar CVV" requiere una configuración adicional de Openpay, contacte a nuestro equipo de soporte para activarlo.', 'woothemes'),
+                'default' => '0',
+                'desc_tip' => true,
+                'options' => array(
+                    '0' => __('No guardar', 'woocommerce'),
+                    '1' => __('Guardar y solicitar CVV para futuras compras', 'woocommerce'),
+                    '2' => __('Guardar y no solicitar CVV para futuras compras', 'woocommerce')
+                ),
             )
         );
     }
@@ -180,7 +216,7 @@ use Openpay\Data\Openpay as Openpay;
     public function validate_fields() {
 
         $this->logger->debug('validate_fields - ' . json_encode($_POST));
-        if( empty( $_POST[ 'openpay_token' ] ) ) {
+        if( empty( $_POST[ 'openpay_token' ] || $_POST[ 'openpay_selected_card' ] ) ) {
             wc_add_notice( 'Openpay token missing', 'error' );
             return false;
         }
@@ -190,13 +226,45 @@ use Openpay\Data\Openpay as Openpay;
     /*
     * We're processing the payments here, everything about it is in Step 5
     */
-    public function process_payment( $order_id ) {  
+    public function process_payment( $order_id ) { 
+
+        $cvv = $_POST['openpay_card_cvc'];
+        $openpay_token = $_POST[ 'openpay_token' ];
+        $device_session_id = $_POST[ 'device_session_id' ];
+        $openpay_tokenized_card = $_POST[ 'openpay_tokenized_card' ];
+        $openpay_save_card_auth = $_POST[ 'openpay_save_card_auth' ];
+        $openpay_selected_card = $_POST[ 'openpay_selected_card' ];
+
+        $this->logger->info('$openpay_tokenized_card ' . json_encode($openpay_tokenized_card)); 
         
         // we need it to get any order detailes
         $this->order = new WC_Order($order_id);
         $order = wc_get_order( $order_id );
 
-        $this->processOpenpayCharge($_POST[ 'device_session_id' ] , $_POST[ 'openpay_token' ], $_POST[ 'card_number' ]);
+        $customer_service = new WC_Openpay_Customer_Service($this->openpay,$this->country,$this->sandbox);
+        $openpay_customer = $customer_service->retrieveCustomer($this->order);
+
+        if (is_user_logged_in()) {
+            if ($openpay_selected_card !== 'new' && $this->save_card_mode === '1'){
+                $this->logger->info('(ln.248) cvvValidation '); 
+                $this->cvvValidation($openpay_selected_card,$openpay_customer,$cvv);
+                $openpay_token = $openpay_selected_card;
+            }elseif($openpay_selected_card !== 'new' && $this->save_card_mode === '2' && $this->country === 'PE'){
+                $openpay_token = $openpay_selected_card;
+            }
+
+            if ($openpay_save_card_auth === '1' && $openpay_selected_card == 'new') {
+                $cards_service = new WC_Openpay_Cards_Service($this->openpay,$this->order,$this->country,$this->sandbox);
+                $openpay_token = $cards_service->validateNewCard($openpay_customer, $openpay_token, $device_session_id, $openpay_tokenized_card, $this->save_card_mode);
+                $this->logger->info('(ln.255) $openpay_token ' . json_encode($openpay_token)); 
+                if ($openpay_token){
+                    $this->order->update_meta_data('_openpay_card_saved_flag',true); // Used for notice confirmation 
+                }
+            }
+        }
+
+        $charge_service = new WC_Openpay_Charge_Service($this->openpay,$order,$customer_service);
+        $charge_service->processOpenpayCharge($openpay_customer, $device_session_id , $openpay_token);
 
 
         // we received the payment
@@ -223,143 +291,26 @@ use Openpay\Data\Openpay as Openpay;
     public function webhook() {        
         }
 
-    public function processOpenpayCharge($device_session_id, $openpay_token, $card_number) {
-        $this->logger->info('processOpenpayCharge');
-
-        $amount = number_format((float)$this->order->get_total(), 2, '.', '');
-        $openpay_customer = $this->createOpenpayCustomer();
-                
-        $charge_request = array(
-            "method" => "card",
-            "amount" => $amount,
-            "currency" => strtolower(get_woocommerce_currency()),
-            "source_id" => $openpay_token,
-            "device_session_id" => $device_session_id,
-            "description" => sprintf("Items: %s", $this->getProductsDetail()),            
-            "order_id" => $this->order->get_id(),
-            'capture' => true,
-            'origin_channel' => "PLUGIN_WOOCOMMERCE"
-        );
-
-        $charge = $this->createOpenpayCharge($openpay_customer, $charge_request);
-        $this->logger->info('processOpenpayCharge {Charge.id} - ' . $charge->id);
-        $this->logger->info('processOpenpayCharge {Charge.description} - ' . $charge->description);
-    }
-
-    public function createOpenpayCharge($customer, $charge_request) {
-        $this->logger->info('createOpenpayCharge'); 
-        try {
-            $charge = $customer->charges->create($charge_request);
-            return $charge;
-        } catch (Exception $e) {
-            $this->logger->error('[ERROR in createOpenpayCharge] Order => '.$this->order->get_id()); 
-            $this->logger->error('[ERROR in createOpenpayCharge] Error => '. json_encode($e));
-            $this->logger->error('[ERROR in createOpenpayCharge] Error => '. $e->description);
-        }
-    }
-
-    public function createOpenpayCustomer() {
-        $this->logger->info('createOpenpayCustomer'); 
-        $customer_data = array(            
-            'name' => $this->order->get_billing_first_name(),
-            'last_name' => $this->order->get_billing_last_name(),
-            'email' => $this->order->get_billing_email(),
-            'requires_account' => false,
-            'phone_number' => $this->order->get_billing_phone()            
-        );
-        
-        if ($this->hasAddress($this->order)) {
-            $customer_data = $this->formatAddress($customer_data, $this->order);
-        }                
-
-        $openpay = $this->getOpenpayInstance();
-
-        try {
-            $customer = $openpay->customers->add($customer_data);
-
-            if (is_user_logged_in()) {
-                if ($this->is_sandbox) {
-                    update_user_meta(get_current_user_id(), '_openpay_customer_sandbox_id', $customer->id);
-                } else {
-                    update_user_meta(get_current_user_id(), '_openpay_customer_id', $customer->id);
-                }                
+    private function cvvValidation($openpay_token,$openpay_customer,$cvv){
+        if (is_numeric($cvv) && (strlen($cvv) == 3 || strlen($cvv) == 4) ){
+            $path       = sprintf('/%s/customers/%s/cards/%s', $this->merchant_id, $openpay_customer->id, $openpay_token);
+            $params     = array('cvv2' => $cvv);
+            $auth       = $this->private_key;
+            $cardInfo = Utils::requestOpenpay($path, $this->country, $this->sandbox,'PUT',$params,$auth);
+            if (isset($cardInfo->error_code)){
+                $this->logger->error('CVV update has failed.');
+                throw new Exception("Error en la transacción: No se pudo completar tu pago.");
             }
-
-            return $customer;
-        } catch (Exception $e) {
-            $this->logger->error('createOpenpayCustomer Order => '.$this->order->get_id()); 
-            return false;
+        }elseif(!is_numeric($cvv)){
+            $this->logger->error('CVV is not valid: Not numeric value');
+            throw new Exception("Error en la transacción: No se pudo completar tu pago. El cvv es incorrecto");
+        }elseif(!(strlen($cvv) == 3 || strlen($cvv) == 4)){
+            $this->logger->error('CVV is not valid: Incorrect number of digits');
+            throw new Exception("Error en la transacción: No se pudo completar tu pago. El cvv es incorrecto");
+        }else{
+            $this->logger->error('CVV is not valid');
+            throw new Exception("Error en la transacción: No se pudo completar tu pago.");
         }
-    }
-
-    private function formatAddress($customer_data, $order) {
-        if ($this->country === 'MX' || $this->country === 'PE') {
-            $customer_data['address'] = array(
-                'line1' => substr($order->get_billing_address_1(), 0, 200),
-                'line2' => substr($order->get_billing_address_2(), 0, 50),
-                'state' => $order->get_billing_state(),
-                'city' => $order->get_billing_city(),
-                'postal_code' => $order->get_billing_postcode(),
-                'country_code' => $order->get_billing_country()
-            );
-        } else if ($this->country === 'CO' ) {
-            $customer_data['customer_address'] = array(
-                'department' => $order->get_billing_state(),
-                'city' => $order->get_billing_city(),
-                'additional' => substr($order->get_billing_address_1(), 0, 200).' '.substr($order->get_billing_address_2(), 0, 50)
-            );
-        }
-        return $customer_data;
-    }
-
-    public function hasAddress($order) {
-        $this->logger->info('hasAddress'); 
-        if($order->get_billing_address_1() && $order->get_billing_state() && $order->get_billing_postcode() && $order->get_billing_country() && $order->get_billing_city()) {
-            return true;
-        }
-        return false;    
-    }
-
-    public function getOpenpayInstance() {
-        $this->logger->info('getOpenpayInstance'); 
-        Openpay::setClassificationMerchant('general');
-        Openpay::setProductionMode($this->sandbox ? false : true);
-        $openpay = Openpay::getInstance($this->merchant_id, $this->private_key, $this->country, $this->getClientIp());
-        $userAgent = "Openpay-WOOC".$this->country."/v2";
-        return $openpay;
-    }
-
-    function getClientIp() {
-        $this->logger->info('getClientIp'); 
-        // Recogemos la IP de la cabecera de la conexión
-        if (!empty($_SERVER['HTTP_CLIENT_IP']))   
-        {
-          $ipAdress = $_SERVER['HTTP_CLIENT_IP'];
-        }
-        // Caso en que la IP llega a través de un Proxy
-        elseif (!empty($_SERVER['HTTP_X_FORWARDED_FOR']))  
-        {
-          $ipAdress = $_SERVER['HTTP_X_FORWARDED_FOR'];
-        }
-        // Caso en que la IP lleva a través de la cabecera de conexión remota
-        else
-        {
-          $ipAdress = $_SERVER['REMOTE_ADDR'];
-        }
-        $this->logger->debug('IP IN HEADER: ' . $ipAdress);  
-        $ipAdress = trim(explode(",", $ipAdress)[0]);
-        return $ipAdress;
-      }
-
-      private function getProductsDetail() {
-        $this->logger->info('getProductsDetail'); 
-        $order = $this->order;
-        $products = [];
-        foreach( $order->get_items() as $item_product ){                        
-            $product = $item_product->get_product();                        
-            $products[] = $product->get_name();
-        }
-        return substr(implode(', ', $products), 0, 249);
     }
 
  }

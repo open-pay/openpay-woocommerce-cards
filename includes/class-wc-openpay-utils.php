@@ -128,4 +128,8 @@ class Utils {
 
         return json_decode($result);
     }
+
+    public static function isNullOrEmptyString($string) {
+        return (!isset($string) || trim($string) === '');
+    }
 }
