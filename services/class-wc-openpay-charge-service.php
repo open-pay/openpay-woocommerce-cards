@@ -13,13 +13,13 @@ Class WC_Openpay_Charge_Service{
         $this->openpay = $openpay;
     }
 
-    public function processOpenpayCharge($openpay_customer, $device_session_id, $openpay_token) {
+    public function processOpenpayCharge($payment_settings) {
         
         $this->logger->info('processOpenpayCharge');
                 
-        $charge_request = $this->collectChargeData($openpay_token,$device_session_id);
+        $charge_request = $this->collectChargeData($payment_settings);
 
-        $charge = $this->create($openpay_customer, $charge_request);
+        $charge = $this->create($payment_settings['openpay_customer'], $charge_request);
         $this->logger->info('processOpenpayCharge {Charge.id} - ' . $charge->id);
         $this->logger->info('processOpenpayCharge {Charge.description} - ' . $charge->description);
     }
@@ -59,17 +59,18 @@ Class WC_Openpay_Charge_Service{
         
     }
 
-    private function collectChargeData($openpay_token, $device_session_id) {
+    private function collectChargeData($payment_settings) {
         
         $charge_request = array(
             "method" => "card",
             "amount" => number_format((float)$this->order->get_total(), 2, '.', ''),
             "currency" => strtolower(get_woocommerce_currency()),
-            "source_id" => $_POST[ 'openpay_token' ], //$openpay_token,
-            "device_session_id" => $device_session_id,
+            "source_id" => $payment_settings['openpay_token'],
+            "device_session_id" => $payment_settings['device_session_id'],
             "description" => sprintf("Items: %s", $this->getProductsDetail()),            
             "order_id" => $this->order->get_id(),
             "capture" => true,
+            'use_card_points' => $payment_settings['openpay_card_points_confirm'],
             "origin_channel" => "PLUGIN_WOOCOMMERCE"
         );
 
