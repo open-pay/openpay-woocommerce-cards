@@ -1,6 +1,10 @@
 <?php
 if(!class_exists('WC_Openpay_Cards_Service')) {
-  require_once(dirname(__FILE__) . "/services/class-wc-openpay-cards-service.php");
+  require_once(dirname(__DIR__) . "/services/class-wc-openpay-cards-service.php");
+}
+
+if(!class_exists('WC_Openpay_MSI')) {
+    require_once(dirname(__DIR__) . "/services/payment-settings/class-wc-openpay-msi.php");
 }
 
 use Automattic\WooCommerce\Blocks\Payments\Integrations\AbstractPaymentMethodType;
@@ -55,12 +59,15 @@ final class WC_Openpay_Gateway_Blocks_Support extends AbstractPaymentMethodType 
 		return array(
 			'title'        => $this->get_setting( 'title' ),
 			'description'  => $this->get_setting( 'description' ),
-      'merchantId' => $this->get_setting( 'merchant_id' ),
-      'publicKey' => $this->get_setting( 'test_public_key' ),
-      'country' => $this->get_setting('country'),
-      'saveCardMode' => $this->get_setting( 'save_card_mode' ),
-      'savedCardsList' => $cards_service->getCreditCardList(),
-      'userLoggedIn' => is_user_logged_in()
+            'merchantId' => $this->get_setting( 'merchant_id' ),
+            'publicKey' => $this->get_setting( 'test_public_key' ),
+            'country' => $this->get_setting('country'),
+            'openpayAPI' => 'https://api.openpay.'.strtolower($this->get_setting('country')).'/v1',
+            'cardPoints' => 'yes' === $this->get_setting( 'card_points' ),
+            'installments' => WC_Openpay_MSI::getMSI( $this->get_setting('msi'), $this->get_setting('minimum_amount_interest_free') ),
+            'saveCardMode' => $this->get_setting( 'save_card_mode' ),
+            'savedCardsList' => $cards_service->getCreditCardList(),
+            'userLoggedIn' => is_user_logged_in()
 		);
 	}
 
