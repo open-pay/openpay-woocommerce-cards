@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { decodeEntities } from '@wordpress/html-entities';
+import axios from "axios";
 
 const { getSetting } = window.wc.wcSettings
 const settings = getSetting( 'wc_openpay_gateway_data', {} )
@@ -7,6 +8,11 @@ const label = decodeEntities( settings.title )
 console.log('{ REACT } - ' + JSON.stringify(settings));
 
 const Form = ( props ) => {
+    //Agregamos a settings datos hardcodeados
+    //settings.useCardPoints = true;
+    //settings.installments = [3, 6];
+    //settings.openpayApi = "";
+
 	const { eventRegistration, emitResponse, billing } = props;
 	const { onPaymentSetup } = eventRegistration;
 
@@ -14,18 +20,41 @@ const Form = ( props ) => {
     const [openpayCardNumber, setOpenpayCardNumber] = useState('');
     const [openpayCardExpiry, setOpenpayCardExpiry] = useState('');
     const [openpayCardCvc,    setOpenpayCardCvc] = useState('');
+    const [cardType,          setCardType] = useState(null);
+    const [pointsCard,        setPointCards] = useState(false);
+    const [installments,      setInstallments] = useState('');
+    const [activateForm,      setActivateForm] = useState(true);
     const [openpaySaveCardAuth, setOpenpaySaveCardAuth] = useState(false);
     const [openpaySelectedCard, setSelectedCard] = useState('new');
 
     var openpayToken = '';
     var openpayTokenizedCard = '';
-    
+
+    //Estilo para bloquear formulario
+    const spinnerOverlayStyle = {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        background: 'rgba(255, 255, 255, 0.7)',
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        zIndex: 10,
+      };
+
 
     const tokenRequest = async () => {
         var card = openpayCardNumber;
         var cvc = openpayCardCvc;
         var expires = openpayCardExpiry;
-        console.log('{ REACT } - ' + card + ' - ' + cvc + ' - ' + expires);
+
+        console.log(settings);
+        console.log(settings.title);
+        console.log(settings.merchantId);
+        console.log(settings.publicKey);
+        console.log(card + ' - ' + cvc + ' - ' + expires);
 
         var data = {
             holder_name: openpayHolderName,
@@ -48,6 +77,14 @@ const Form = ( props ) => {
         const result = await tokenRequestWrapper(data);
         openpayToken = result.data.id;
         openpayTokenizedCard = result.data.card.card_number;
+        if(result.data.card.points_card === true && settings.cardPoints && installments == 0) {
+            if(confirm("¿Desea usar los puntos?")){
+                console.log("Acepto los puntos")
+            } else {
+                console.log("No acepto los puntos");
+            }
+            setPointCards(true);
+        }
     }
 
     const tokenRequestWrapper = (data) => {
@@ -60,6 +97,13 @@ const Form = ( props ) => {
         });
     }
 
+    const validateCardNumber = (e) => {
+        const value = e.target.value;
+        if(/^\d{0,16}$/.test(value)){
+            setOpenpayCardNumber(value);
+        }
+    }
+
     useEffect( () => {
 		const unsubscribe = onPaymentSetup( async () => {
 
@@ -67,12 +111,12 @@ const Form = ( props ) => {
 			//console.log('onPaymentSetup_openpayHolderName - ' + openpayHolderName);
             //console.log('onPaymentSetup_deviceSessionId - ' + deviceSessionId);
             //console.log('onPaymentSetup_CARD - ' + card );
-            //console.log('Billing - ' + JSON.stringify(billing))
+            console.log('Billing - ' + JSON.stringify(billing))
             //console.log('Billing - ' + billing.billingAddress.first_name);
 
         if(openpayHolderName.length){
             await tokenRequest();
-            console.log('{ REACT } - after token request');
+            console.log('after token request');
 
             if ( openpayToken.length) {
                 return {
@@ -106,6 +150,23 @@ const Form = ( props ) => {
 				message: 'There was an error',
 			};
 		} );
+
+        //Llamada al api para obtener los bines
+        if(openpayCardNumber.length === 6){
+            console.log(settings)
+            const endpoint = `${settings.openpayAPI}/${settings.merchantId}/bines/${openpayCardNumber}/promotions`
+            setActivateForm(false);
+            axios.get(endpoint).then((response) => {
+                setCardType(response.data.cardType);
+                console.log(response.data.installments);
+                setActivateForm(true);
+            }).catch((error) => {
+                console.log(error)
+                setActivateForm(true);
+                setCardType(null);
+            });
+        }
+
 		// Unsubscribes when this component is unmounted.
 		return () => {
 			unsubscribe();
@@ -129,7 +190,9 @@ const Form = ( props ) => {
     return (
         
         <div id="payment_form_openpay_cards" style={{ marginBottom: '20px', display: 'flex', flexWrap: 'wrap', gap: '0 16px', justifyContent: 'space-between'}}>
-            {settings.userLoggedIn == true ? 
+            { !activateForm && (<div style={spinnerOverlayStyle}> <div className="" /></div>)}
+
+            {settings.userLoggedIn == true ?
             <div class="wc-blocks-components-select is-active" style={{flex: '0 0 100%'}}>
                 <div class="wc-blocks-components-select__container">
                     <label class="wc-blocks-components-select__label" for="openpay-selected-card">Selecciona la tarjeta</label>
@@ -147,8 +210,9 @@ const Form = ( props ) => {
                 </div>
             </div> : null}
 
-            
             { openpaySelectedCard == 'new' ? /* OPENPAY HOLDER NAME */
+
+
             <div class="wc-block-components-text-input is-active" style={{flex: '0 0 100%'}}>
                 <input 
                     id="openpay-holder-name"
@@ -172,9 +236,9 @@ const Form = ( props ) => {
                  name="openpayCardNumber"
                  class="wc-credit-card-form-card-number"
                  value={openpayCardNumber} 
-                 onChange={e => setOpenpayCardNumber(e.target.value)}
+                 onChange={ validateCardNumber }
                  type="text"
-                 maxlength="20"
+                 maxlength="16"
                  autocomplete="off" 
                  placeholder="•••• •••• •••• ••••"
                  data-openpay-card="card_number" />
@@ -213,18 +277,48 @@ const Form = ( props ) => {
             </div> }
 
             { settings.userLoggedIn == true && settings.saveCardMode != 0 && openpaySelectedCard == 'new' ? <div class="wc-block-components-checkbox"><label for="openpay-save-card-auth">
-                <input 
+                <input
                     id="openpay-save-card-auth"
-                    name="openpaySaveCardAuth"  
+                    name="openpaySaveCardAuth"
                     class="wc-block-components-checkbox__input"
-                    value={openpaySaveCardAuth} 
+                    value={openpaySaveCardAuth}
                     onChange={e => {setOpenpaySaveCardAuth(!openpaySaveCardAuth); console.log(openpaySaveCardAuth) } }
-                    type="checkbox" 
+                    type="checkbox"
                     aria-invalid="false"/>
                 <svg class="wc-block-components-checkbox__mark" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 20"><path d="M9 16.2L4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4L9 16.2z"></path></svg>
                 <span class="wc-block-components-checkbox__label" style={{fontSize: '1.25em'}}>Guardar Tarjeta</span></label>
-            </div> : null }        
-            
+            </div> : null }
+
+            <div class="wc-block-components-text-input is-active" style={{ marginBottom: '20px' }} >
+                <label for="save_cc" class="label">
+                    <div class="tooltip">
+                    <input type="checkbox" name="save_cc" id="save_cc" />
+                    <span >Guardar tarjeta</span>
+                    <img alt="" src="<?php echo $this->images_dir ?>tooltip_symbol.svg"></img>
+                    <span class="tooltiptext" >Al guardar los datos de tu tarjeta agilizarás tus pagos futuros y podrás usarla como método de pago guardado.</span>
+                    </div>
+                </label>
+            </div>
+            {settings.installments != null && cardType == "credit" ?
+            <div class="wc-blocks-components-select is-active" style={{flex: '0 0 100%'}}>
+                <div class="wc-blocks-components-select__container">
+                    <label class="wc-blocks-components-select__label" for="installments">Meses sin intereses</label>
+                    <select class="wc-blocks-components-select__select"
+                        name="installments"
+                        id="installments"
+                        placeholder="Pago de contado"
+                        value={installments}
+                        onChange={(e) => setInstallments(e.target.value)}
+                    >
+                        <option value="0" selected="selected"> Pago de contado </option>
+                        {
+                            settings.installments.map( (installment, index ) => {
+                                return (<option key={index} value={installment}> {installment} Meses </option>)
+                            })
+                        }
+                    </select>
+                </div>
+            </div> : null}
         </div>
     );
 };
