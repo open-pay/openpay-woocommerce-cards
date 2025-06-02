@@ -262,7 +262,7 @@ if(!class_exists('WC_Openpay_Cards_Service')) {
         $openpay_save_card_auth = $_POST[ 'openpay_save_card_auth' ];
         $openpay_selected_card = $_POST[ 'openpay_selected_card' ];
         $openpay_card_points_confirm = $_POST[ 'openpay_card_points_confirm' ];
-
+        $openpay_payment_plan = $_POST['openpay_selected_installment'];
 
 
         $this->logger->info('$openpay_tokenized_card ' . json_encode($openpay_tokenized_card)); 
@@ -297,7 +297,8 @@ if(!class_exists('WC_Openpay_Cards_Service')) {
             'openpay_token' => $openpay_token,
             'device_session_id' => $openpay_tokenized_card,
             'openpay_customer' => $openpay_customer,
-            'openpay_card_points_confirm' => $openpay_card_points_confirm
+            'openpay_card_points_confirm' => $openpay_card_points_confirm,
+            'openpay_payment_plan' => $openpay_payment_plan
         );
 
         $charge_service = new WC_Openpay_Charge_Service($this->openpay,$order,$customer_service);
