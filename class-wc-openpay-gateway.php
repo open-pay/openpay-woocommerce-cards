@@ -19,6 +19,10 @@ if(!class_exists('WC_Openpay_Cards_Service')) {
     require_once(dirname(__FILE__) . "/services/class-wc-openpay-cards-service.php");
 }
 
+if(!class_exists('WC_Openpay_Cards_Service')) {
+    require_once(dirname(__FILE__) . "/services/class-wc-openpay-capture-service.php");
+}
+
  Class WC_Openpay_Gateway extends WC_Payment_Gateway{
     /**
      * Class constructor
@@ -29,6 +33,8 @@ if(!class_exists('WC_Openpay_Cards_Service')) {
     protected $private_key; 
     protected $public_key;
     protected $card_points;
+
+    protected $capture = true;  // Variable para detectar si se puede realizar capturas
     protected $order;
     protected $logger;
     protected $openpay;
@@ -62,6 +68,7 @@ if(!class_exists('WC_Openpay_Cards_Service')) {
         $this->card_points = 'yes' === $this->get_option( 'card_points' );
         $this->openpay = WC_Openpay_Client::getOpenpayInstance($this->sandbox, $this->merchant_id, $this->private_key, $this->country);
         $this->save_card_mode = $this->get_option( 'save_card_mode' );
+        $this->capture = $this->get_option( 'capture' );    // Obtienes el valor del form admin para captures
 
         $save_cc = isset($this->settings['save_cc']) ? (strcmp($this->settings['save_cc'], '0') != 0) : false;
         $this->save_cc = $save_cc;
@@ -143,6 +150,18 @@ if(!class_exists('WC_Openpay_Cards_Service')) {
                     '0' => __('No guardar', 'woocommerce'),
                     '1' => __('Guardar y solicitar CVV para futuras compras', 'woocommerce'),
                     '2' => __('Guardar y no solicitar CVV para futuras compras', 'woocommerce')
+                ),
+            ),
+            'capture' => array( // Se agrega la configuración de la captura en el admin
+		        'title' => __('Configuración del cargo', 'woocommerce'),
+                'type' => 'select',
+                'class' => 'wc-enhanced-select',             
+                'description' => __('Indica si el cargo se hace o no inmediatamente, con la pre-autorización solo se reserva el monto para ser confirmado o cancelado posteriormente. Las pre-autorizaciones no pueden ser utilizadas en combinación con pago con puntos Bancomer.', 'woocommerce'),                
+                'default' => 'true',
+                'desc_tip' => true,                
+                'options' => array(
+                    'true' => __('Cargo inmediato', 'woocommerce'),
+                    'false' => __('Pre-autorizar únicamente', 'woocommerce')
                 ),
             ),
             'msi' => array(
@@ -266,6 +285,8 @@ if(!class_exists('WC_Openpay_Cards_Service')) {
 
 
         $this->logger->info('$openpay_tokenized_card ' . json_encode($openpay_tokenized_card)); 
+
+        $this->logger->info('$capture_value ' . $this->capture);    // log para visualizar como viene la opción de capture
         
         // we need it to get any order detailes
         $this->order = new WC_Order($order_id);
@@ -298,10 +319,11 @@ if(!class_exists('WC_Openpay_Cards_Service')) {
             'device_session_id' => $openpay_tokenized_card,
             'openpay_customer' => $openpay_customer,
             'openpay_card_points_confirm' => $openpay_card_points_confirm,
-            'openpay_payment_plan' => $openpay_payment_plan
+            'openpay_payment_plan' => $openpay_payment_plan,
+            'capture' => $this->capture
         );
 
-        $charge_service = new WC_Openpay_Charge_Service($this->openpay,$order,$customer_service);
+        $charge_service = new WC_Openpay_Charge_Service($this->openpay,$order,$customer_service, $this->capture);   // le agregue el capture
         $charge_service->processOpenpayCharge($payment_settings);
 
 
@@ -321,6 +343,18 @@ if(!class_exists('WC_Openpay_Cards_Service')) {
             'result' => 'success',
             'redirect' => $this->get_return_url( $this->order ),
         );
+    }
+
+    /**
+     * Si el tipo de cargo esta configurado como Pre-autorización, el estatus de la orden es marcado como "on-hold"
+     * 
+     * @param type $order
+     * @param type $data
+     * 
+     * @link https://docs.woocommerce.com/wc-apidocs/source-class-WC_Checkout.html#334
+     */
+    public function action_woocommerce_checkout_create_order($order, $data) {   // Se agrega log para registro de captura
+        $this->logger->debug('action_woocommerce_checkout_create_order => '.json_encode(array('$this->capture' => $this->capture)));   
     }
 
     /*

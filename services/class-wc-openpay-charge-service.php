@@ -6,11 +6,12 @@ Class WC_Openpay_Charge_Service{
     private $order;
     private $customer_service;
     
-    public function __construct($openpay,$order,$customer_service){
+    public function __construct($openpay,$order,$customer_service, $capture){ // agregue al constructor el parametro capture
         $this->logger = wc_get_logger(); 
         $this->order = $order;
         $this->customer_service = $customer_service;
         $this->openpay = $openpay;
+        $this->capture = $capture;  // se agrega la referencia
     }
 
     public function processOpenpayCharge($payment_settings) {
@@ -69,7 +70,7 @@ Class WC_Openpay_Charge_Service{
             "device_session_id" => $payment_settings['device_session_id'],
             "description" => sprintf("Items: %s", $this->getProductsDetail()),            
             "order_id" => $this->order->get_id(),
-            "capture" => true,
+            "capture" => $payment_settings['capture'],  // Se agrega al reques el valor capture tomado desde los ajustes
             'use_card_points' => $payment_settings['openpay_card_points_confirm'],
             "origin_channel" => "PLUGIN_WOOCOMMERCE",
             "payment_plan" => $payment_settings['openpay_payment_plan']
