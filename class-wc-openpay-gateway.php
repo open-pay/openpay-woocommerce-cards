@@ -265,6 +265,7 @@ if(!class_exists('WC_Openpay_Cards_Service')) {
         $openpay_payment_plan = $_POST['openpay_selected_installment'];
 
 
+
         $this->logger->info('$openpay_tokenized_card ' . json_encode($openpay_tokenized_card)); 
         
         // we need it to get any order detailes

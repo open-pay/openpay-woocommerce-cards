@@ -49,12 +49,7 @@ const Form = ( props ) => {
         var card = openpayCardNumber;
         var cvc = openpayCardCvc;
         var expires = openpayCardExpiry;
-
-        console.log(settings);
-        console.log(settings.title);
-        console.log(settings.merchantId);
-        console.log(settings.publicKey);
-        console.log(card + ' - ' + cvc + ' - ' + expires);
+        console.log('{ REACT } - ' + card + ' - ' + cvc + ' - ' + expires);
 
         var data = {
             holder_name: openpayHolderName,
@@ -93,13 +88,14 @@ const Form = ( props ) => {
         });
     }
 
+
     const validateCardNumber = (e) => {
         const value = e.target.value;
         if(/^\d{0,16}$/.test(value)){
             setOpenpayCardNumber(value);
         }
     }
-
+    
     useEffect( () => {
 		const unsubscribe = onPaymentSetup( async () => {
 
@@ -107,12 +103,12 @@ const Form = ( props ) => {
 			//console.log('onPaymentSetup_openpayHolderName - ' + openpayHolderName);
             //console.log('onPaymentSetup_deviceSessionId - ' + deviceSessionId);
             //console.log('onPaymentSetup_CARD - ' + card );
-            console.log('Billing - ' + JSON.stringify(billing))
+            //console.log('Billing - ' + JSON.stringify(billing))
             //console.log('Billing - ' + billing.billingAddress.first_name);
 
         if(openpayHolderName.length){
             await tokenRequest();
-            console.log('after token request');
+            console.log('{ REACT } - after token request');
 
             if ( openpayToken.length) {
                 return {
@@ -221,8 +217,8 @@ const Form = ( props ) => {
     return (
         
         <div id="payment_form_openpay_cards" style={{ marginBottom: '20px', display: 'flex', flexWrap: 'wrap', gap: '0 16px', justifyContent: 'space-between'}}>
-            { !activateForm && (<div style={spinnerOverlayStyle}> <div className="" /></div>)}
 
+            { !activateForm && (<div style={spinnerOverlayStyle}> <div className="" /></div>)}
             {settings.userLoggedIn == true ?
             <div class="wc-blocks-components-select is-active" style={{flex: '0 0 100%'}}>
                 <div class="wc-blocks-components-select__container">
@@ -242,8 +238,6 @@ const Form = ( props ) => {
             </div> : null}
 
             { openpaySelectedCard == 'new' ? /* OPENPAY HOLDER NAME */
-
-
             <div class="wc-block-components-text-input is-active" style={{flex: '0 0 100%'}}>
                 <input 
                     id="openpay-holder-name"
