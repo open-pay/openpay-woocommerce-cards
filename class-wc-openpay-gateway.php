@@ -28,6 +28,7 @@ if(!class_exists('WC_Openpay_Cards_Service')) {
     protected $merchant_id; 
     protected $private_key; 
     protected $public_key;
+    protected $card_points;
     protected $order;
     protected $logger;
     protected $openpay;
@@ -58,6 +59,7 @@ if(!class_exists('WC_Openpay_Cards_Service')) {
         $this->merchant_id = $this->get_option( 'merchant_id' );
         $this->private_key = $this->sandbox ? $this->get_option( 'test_private_key' ) : $this->get_option( 'live_private_key' );
         $this->public_key = $this->sandbox ? $this->get_option( 'test_public_key' ) : $this->get_option( 'live_public_key' );
+        $this->card_points = 'yes' === $this->get_option( 'card_points' );
         $this->openpay = WC_Openpay_Client::getOpenpayInstance($this->sandbox, $this->merchant_id, $this->private_key, $this->country);
         $this->save_card_mode = $this->get_option( 'save_card_mode' );
 
@@ -74,7 +76,7 @@ if(!class_exists('WC_Openpay_Cards_Service')) {
         }
     
     /**
-    * Plugin options, we deal with it in Step 3 too
+    * Plugin options
     */
     public function init_form_fields(){
         $this->form_fields = array(
@@ -123,6 +125,14 @@ if(!class_exists('WC_Openpay_Cards_Service')) {
                 'title'       => 'Llave secreta (Sandbox)',
                 'type'        => 'password',
             ),
+            'card_points' => array(
+                'type' => 'checkbox',
+                'title' => __('Pago con puntos', 'woothemes'),
+                'label' => __('Habilitar', 'woothemes'),
+                'description' => __('Recibe pagos con puntos BBVA habilitando esta opción. Esta opción no se puede combinar con pre-autorizaciones o MSI.', 'woothemes'),
+                'desc_tip' => true,
+                'default' => 'no'
+            ),
             'save_card_mode' => array(
                 'title' => __('Guardar tarjetas', 'woothemes'),
                 'type' => 'select',
@@ -134,12 +144,29 @@ if(!class_exists('WC_Openpay_Cards_Service')) {
                     '1' => __('Guardar y solicitar CVV para futuras compras', 'woocommerce'),
                     '2' => __('Guardar y no solicitar CVV para futuras compras', 'woocommerce')
                 ),
+            ),
+            'msi' => array(
+            'title' => __('Meses sin intereses', 'woocommerce'),
+            'type' => 'multiselect',
+            'class' => 'wc-enhanced-select',
+            'css' => 'width: 400px;',
+            'default' => '',
+            'options' => array('3' => '3 meses', '6' => '6 meses', '9' => '9 meses', '12' => '12 meses', '18' => '18 meses'),
+                'custom_attributes' => array(
+                    'data-placeholder' => __('Opciones', 'woocommerce'),
+                ),
+            ),
+            'minimum_amount_interest_free' => array(
+                'type' => 'number',
+                'title' => __('Monto mínimo MSI', 'woothemes'),
+                'description' => __('Monto mínimo para aceptar meses sin intereses.', 'woothemes'),
+                'default' => __('1', 'woothemes')
             )
         );
     }
     
     /**
-     * You will need it if you want your custom credit card form, Step 4 is about it
+     * You will need it if you want your custom credit card form
      */
     public function payment_fields() {   
            
@@ -181,7 +208,7 @@ if(!class_exists('WC_Openpay_Cards_Service')) {
     }
     
     /*
-    * Custom CSS and JS, in most cases required only when you decided to go with a custom credit card form
+    * Load CSS and JS scripts
     */
     public function payment_scripts() {
         /*
@@ -211,7 +238,7 @@ if(!class_exists('WC_Openpay_Cards_Service')) {
     }
 
     /*
-    * Fields validation, more in Step 5
+    * Fields validation
     */
     public function validate_fields() {
 
@@ -224,7 +251,7 @@ if(!class_exists('WC_Openpay_Cards_Service')) {
     }
 
     /*
-    * We're processing the payments here, everything about it is in Step 5
+    * Processing the payments 
     */
     public function process_payment( $order_id ) { 
 
@@ -234,6 +261,9 @@ if(!class_exists('WC_Openpay_Cards_Service')) {
         $openpay_tokenized_card = $_POST[ 'openpay_tokenized_card' ];
         $openpay_save_card_auth = $_POST[ 'openpay_save_card_auth' ];
         $openpay_selected_card = $_POST[ 'openpay_selected_card' ];
+        $openpay_card_points_confirm = $_POST[ 'openpay_card_points_confirm' ];
+        $openpay_payment_plan = $_POST['openpay_selected_installment'];
+
 
         $this->logger->info('$openpay_tokenized_card ' . json_encode($openpay_tokenized_card)); 
         
@@ -246,7 +276,7 @@ if(!class_exists('WC_Openpay_Cards_Service')) {
 
         if (is_user_logged_in()) {
             if ($openpay_selected_card !== 'new' && $this->save_card_mode === '1'){
-                $this->logger->info('(ln.248) cvvValidation '); 
+                $this->logger->info(' cvvValidation ');
                 $this->cvvValidation($openpay_selected_card,$openpay_customer,$cvv);
                 $openpay_token = $openpay_selected_card;
             }elseif($openpay_selected_card !== 'new' && $this->save_card_mode === '2' && $this->country === 'PE'){
@@ -256,15 +286,23 @@ if(!class_exists('WC_Openpay_Cards_Service')) {
             if ($openpay_save_card_auth === '1' && $openpay_selected_card == 'new') {
                 $cards_service = new WC_Openpay_Cards_Service($this->openpay,$this->order,$this->country,$this->sandbox);
                 $openpay_token = $cards_service->validateNewCard($openpay_customer, $openpay_token, $device_session_id, $openpay_tokenized_card, $this->save_card_mode);
-                $this->logger->info('(ln.255) $openpay_token ' . json_encode($openpay_token)); 
+                $this->logger->info(' $openpay_token ' . json_encode($openpay_token));
                 if ($openpay_token){
                     $this->order->update_meta_data('_openpay_card_saved_flag',true); // Used for notice confirmation 
                 }
             }
         }
 
+        $payment_settings = Array(
+            'openpay_token' => $openpay_token,
+            'device_session_id' => $openpay_tokenized_card,
+            'openpay_customer' => $openpay_customer,
+            'openpay_card_points_confirm' => $openpay_card_points_confirm,
+            'openpay_payment_plan' => $openpay_payment_plan
+        );
+
         $charge_service = new WC_Openpay_Charge_Service($this->openpay,$order,$customer_service);
-        $charge_service->processOpenpayCharge($openpay_customer, $device_session_id , $openpay_token);
+        $charge_service->processOpenpayCharge($payment_settings);
 
 
         // we received the payment
@@ -286,9 +324,10 @@ if(!class_exists('WC_Openpay_Cards_Service')) {
     }
 
     /*
-        * In case you need a webhook, like PayPal IPN etc
-        */
-    public function webhook() {        
+    * In case you need a webhook, like PayPal IPN etc
+     */
+    public function webhook() {   
+        // webhhok     
         }
 
     private function cvvValidation($openpay_token,$openpay_customer,$cvv){
