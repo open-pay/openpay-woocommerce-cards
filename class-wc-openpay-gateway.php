@@ -19,6 +19,10 @@ if(!class_exists('WC_Openpay_Cards_Service')) {
     require_once(dirname(__FILE__) . "/services/class-wc-openpay-cards-service.php");
 }
 
+if(!class_exists('WC_Openpay_Payment_Settings_Validation')) {
+    require_once(dirname(__FILE__) . "/services/payment-settings/class-wc-openpay-payment-settings-validation.php");
+}
+
  Class WC_Openpay_Gateway extends WC_Payment_Gateway{
     /**
      * Class constructor
@@ -29,6 +33,10 @@ if(!class_exists('WC_Openpay_Cards_Service')) {
     protected $private_key; 
     protected $public_key;
     protected $card_points;
+    protected $msi;
+    protected $installments_is_active;
+    protected $minimum_amount_interest_free;
+
     protected $order;
     protected $logger;
     protected $openpay;
@@ -56,10 +64,14 @@ if(!class_exists('WC_Openpay_Cards_Service')) {
         $this->enabled = $this->get_option( 'enabled' );
         $this->country = $this->get_option( 'country' );
         $this->sandbox = 'yes' === $this->get_option( 'sandbox' );
-        $this->merchant_id = $this->get_option( 'merchant_id' );
+        $this->merchant_id = $this->sandbox ? $this->get_option( 'test_merchant_id' ) : $this->get_option( 'live_merchant_id' );
         $this->private_key = $this->sandbox ? $this->get_option( 'test_private_key' ) : $this->get_option( 'live_private_key' );
         $this->public_key = $this->sandbox ? $this->get_option( 'test_public_key' ) : $this->get_option( 'live_public_key' );
         $this->card_points = 'yes' === $this->get_option( 'card_points' );
+        $this->msi = $this->get_option( 'msi' );
+        $this->installments_is_active = 'yes' === $this->get_option( 'installments_is_active' );
+        $this->minimum_amount_interest_free = $this->get_option( 'minimum_amount_interest_free' );
+
         $this->openpay = WC_Openpay_Client::getOpenpayInstance($this->sandbox, $this->merchant_id, $this->private_key, $this->country);
         $this->save_card_mode = $this->get_option( 'save_card_mode' );
 
@@ -105,7 +117,7 @@ if(!class_exists('WC_Openpay_Cards_Service')) {
                 'default'     => 'yes',
                 'desc_tip'    => true,
             ),
-            'merchant_id' => array(
+            'live_merchant_id' => array(
                 'title'       => 'ID de comercio',
                 'type'        => 'text'
             ),
@@ -116,6 +128,10 @@ if(!class_exists('WC_Openpay_Cards_Service')) {
             'live_private_key' => array(
                 'title'       => 'Llave secreta (Producción)',
                 'type'        => 'password'
+            ),
+            'test_merchant_id' => array(
+                'title'       => 'ID de comercio',
+                'type'        => 'text'
             ),
             'test_public_key' => array(
                 'title'       => 'Llave publica (Sandbox)',
@@ -145,6 +161,7 @@ if(!class_exists('WC_Openpay_Cards_Service')) {
                     '2' => __('Guardar y no solicitar CVV para futuras compras', 'woocommerce')
                 ),
             ),
+            // Meses sin intereses solo para MX
             'msi' => array(
             'title' => __('Meses sin intereses', 'woocommerce'),
             'type' => 'multiselect',
@@ -156,6 +173,16 @@ if(!class_exists('WC_Openpay_Cards_Service')) {
                     'data-placeholder' => __('Opciones', 'woocommerce'),
                 ),
             ),
+            // Cuotas solo para PE
+            'installments_is_active' => array(
+                'type' => 'checkbox',
+                'title' => __('Cuotas', 'woothemes'),
+                'label' => __('Habilitar', 'woothemes'),
+                'description' => __('Habilitar pagos en cuotas', 'woocommerce'),
+                'desc_tip' => true,
+                'default' => 'no'
+            ),
+            // Monto minimo para meses sin intereses solo MX
             'minimum_amount_interest_free' => array(
                 'type' => 'number',
                 'title' => __('Monto mínimo MSI', 'woothemes'),
@@ -352,6 +379,14 @@ if(!class_exists('WC_Openpay_Cards_Service')) {
             throw new Exception("Error en la transacción: No se pudo completar tu pago.");
         }
     }
+
+     public function process_admin_options()
+     {
+         parent::process_admin_options();
+         $settingsValidation = new WC_Openpay_Payment_Settings_Validation();
+         $settingsValidation->validateOpenpayCredentials();
+         $settingsValidation->validateOpenpayCurrencies();
+     }
 
  }
 

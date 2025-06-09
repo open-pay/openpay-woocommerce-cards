@@ -1,23 +1,7 @@
 <?php
 
 class Utils {
-    public static function getCurrencies($countryCode) {
-        $currencies = ['USD'];
-        $countryCode = strtoupper($countryCode);
-        switch ($countryCode) {
-            case 'MX':
-                $currencies[] = 'MXN';
-                return $currencies;
-            case 'CO':
-                $currencies[] = 'COP';
-                return $currencies;
-            case 'PE':
-                $currencies[] = 'PEN';
-                return $currencies;
-            default:
-                break;
-        }
-    }
+
 
     public static function getUrlScripts($country){
         $scripts = [
@@ -52,6 +36,7 @@ class Utils {
             default:
                 break;
         }
+        return false;
     }
 
     public static function getCountryName($countryCode) {
@@ -65,22 +50,7 @@ class Utils {
             default:
                 break;
         }
-    }
-
-    public static function getMessageError($countryName, $currencies) {
-        $format = 'Openpay Cards Plugin %s is only available for %s currencies.';
-        $currenciesString = '';
-        $numberCurrencies = count($currencies) - 1;
-        $index = 0;
-        foreach ($currencies as $currency) {
-            if($index == $numberCurrencies) {
-                $currenciesString = $currenciesString . $currency;
-                break;
-            }
-            $currenciesString = $currenciesString . $currency.', ';
-            $index++;
-        }
-        return sprintf($format, $countryName, $currenciesString);
+        return false;
     }
 
     public static function requestOpenpay($api, $country, $is_sandbox, $method = 'GET', $params = [], $auth = null) {
