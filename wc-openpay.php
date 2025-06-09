@@ -7,7 +7,7 @@
 * Author: Openpay
 * Author URI: http://www.openpay.mx
 * Developer: Openpay
-* Text Domain: openpay-cards
+* Text Domain: wc-openpay-payments
 *
 * WC requires at least: 3.0
 * WC tested up to: 9.2.3
@@ -37,7 +37,14 @@ add_action( 'before_woocommerce_init', 'openpay_checkout_blocks_compatibility' )
 
 add_action('admin_enqueue_scripts', 'openpay_cards_admin_enqueue');
 
+add_filter( 'plugin_action_links_' . plugin_basename(__FILE__), 'openpay_settings_link' );
 
+// Agrega un enlace de Ajustes del plugin
+function openpay_settings_link ( $links ) {
+    $settings_link = '<a href="' . admin_url('admin.php?page=wc-settings&tab=checkout&section=wc_openpay_gateway' ). '">' . __('Ajustes', 'wc-openpay-payments') . '</a>';
+    array_push( $links, $settings_link );
+    return $links;
+}
 
 function openpay_add_gateway_class( $gateways ) {
 	$gateways[] = 'WC_Openpay_Gateway'; // Gateway Class Name

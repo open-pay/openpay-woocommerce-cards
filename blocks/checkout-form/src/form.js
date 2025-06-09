@@ -5,7 +5,7 @@ import axios from "axios";
 const { getSetting } = window.wc.wcSettings
 const settings = getSetting( 'wc_openpay_gateway_data', {} )
 const label = decodeEntities( settings.title )
-console.log('{ REACT } - ' + JSON.stringify(settings));
+console.log('{ REACT INIT SETTINGS } - ' + JSON.stringify(settings));
 
 const Form = ( props ) => {
     //Agregamos a settings datos hardcodeados
