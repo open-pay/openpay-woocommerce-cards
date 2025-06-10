@@ -72,7 +72,7 @@ Class WC_Openpay_Charge_Service{
             "capture" => true,
             'use_card_points' => $payment_settings['openpay_card_points_confirm'],
             "origin_channel" => "PLUGIN_WOOCOMMERCE",
-            "payment_plan" => $payment_settings['openpay_payment_plan']
+            "payment_plan" => array("payments" => $payment_settings['openpay_payment_plan'])
         );
 
         if (!is_user_logged_in()) {
