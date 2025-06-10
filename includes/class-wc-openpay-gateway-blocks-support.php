@@ -3,8 +3,8 @@ if(!class_exists('WC_Openpay_Cards_Service')) {
   require_once(dirname(__DIR__) . "/services/class-wc-openpay-cards-service.php");
 }
 
-if(!class_exists('WC_Openpay_MSI')) {
-    require_once(dirname(__DIR__) . "/services/payment-settings/class-wc-openpay-msi.php");
+if(!class_exists('WC_Openpay_Installments')) {
+    require_once(dirname(__DIR__) . "/services/payment-settings/class-wc-openpay-installments.php");
 }
 
 use Automattic\WooCommerce\Blocks\Payments\Integrations\AbstractPaymentMethodType;
