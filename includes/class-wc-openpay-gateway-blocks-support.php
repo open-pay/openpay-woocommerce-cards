@@ -56,18 +56,16 @@ final class WC_Openpay_Gateway_Blocks_Support extends AbstractPaymentMethodType 
     public function get_payment_method_data() {
       $cards_service = new WC_Openpay_Cards_Service();
       $installments = new WC_Openpay_Installments();
+      $openpay_gateway = new WC_Openpay_Gateway();
       $sandboxUrlPrefix = 'yes' === $this->get_setting( 'sandbox' ) ? 'sandbox-' :'';
 
 		return array(
-			'title'        => $this->get_setting( 'title' ),
-			'description'  => $this->get_setting( 'description' ),
-            'merchantId' => $this->get_setting( 'merchant_id' ),
-            'publicKey' => $this->get_setting( 'test_public_key' ),
-            'country' => $this->get_setting('country'),
+            'merchantId' => $openpay_gateway->merchant_id,
+            'publicKey' => $openpay_gateway->public_key,
+            'country' => $openpay_gateway->country,
             'openpayAPI' =>  'https://'.$sandboxUrlPrefix.'api.openpay.'.strtolower($this->get_setting('country')).'/v1',
             'cardPoints' => 'yes' === $this->get_setting( 'card_points' ),
             'installments' => $installments->getInstallments(),
-            //'installments' => WC_Openpay_MSI::getMSI( $this->get_setting('msi'), $this->get_setting('minimum_amount_interest_free') ),
             'saveCardMode' => $this->get_setting( 'save_card_mode' ),
             'savedCardsList' => $cards_service->getCreditCardList(),
             'userLoggedIn' => is_user_logged_in()

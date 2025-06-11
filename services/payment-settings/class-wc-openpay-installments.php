@@ -41,5 +41,11 @@ Class WC_Openpay_Installments extends WC_Openpay_Gateway{
        return $this->processInstallments();
     }
 
+    public function dataValidationAssignement($charge_request,$openpay_payment_plan){
+            if (isset($openpay_payment_plan)){
+                $charge_request["openpay_payment_plan"] = $openpay_payment_plan;
+        }
+    }
+
 }
 

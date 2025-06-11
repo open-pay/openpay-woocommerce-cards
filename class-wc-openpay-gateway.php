@@ -28,10 +28,10 @@ if(!class_exists('WC_Openpay_Payment_Settings_Validation')) {
      * Class constructor
      */
     protected $sandbox;
-    protected $country;
-    protected $merchant_id; 
+    public $country;
+    public $merchant_id;
     protected $private_key; 
-    protected $public_key;
+    public $public_key;
     protected $card_points;
     protected $msi;
     protected $installments_is_active;
