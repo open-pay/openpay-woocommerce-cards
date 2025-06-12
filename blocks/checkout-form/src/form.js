@@ -163,12 +163,11 @@ const Form = ( props ) => {
             }
         } else if (settings.country == 'PE') {
             if(openpayCardNumber.length === 6){
-                console.log(settings)
                 const endpoint = `${settings.openpayAPI}/${settings.merchantId}/bines/${openpayCardNumber}/promotions`
                 setActivateForm(false);
                 axios.get(endpoint).then((response) => {
                     setCardType(response.data.cardType);
-                    if(response.data.installments.paymentPlan ) setPayments(response.data.installments);
+                    if(settings.installments.paymentPlan) setPayments(response.data.installments);
                     setActivateForm(true);
                 }).catch((error) => {
                     console.log(error)
@@ -324,10 +323,10 @@ const Form = ( props ) => {
                     </div>
                 </label>
             </div>
-            { payments != null && (cardType == 'credit' || cardType == 'CREDIT')  ?
+            { payments.length > 0 && (cardType == 'credit' || cardType == 'CREDIT')  ?
             <div class="wc-blocks-components-select is-active" style={{flex: '0 0 100%'}}>
                 <div class="wc-blocks-components-select__container">
-                    <label class="wc-blocks-components-select__label" for="installments">Meses sin intereses</label>
+                    <label class="wc-blocks-components-select__label" for="installments">{settings.country == 'MX' ? 'Meses sin intereses' : 'Cuotas'}</label>
                     <select class="wc-blocks-components-select__select"
                         name="installments"
                         id="installments"
@@ -338,7 +337,7 @@ const Form = ( props ) => {
                         <option value="0" selected="selected"> Pago de contado </option>
                         {
                             payments.map( (installment, index ) => {
-                                return (<option key={index} value={installment}> {installment} Meses </option>)
+                                return (<option key={index} value={installment}> {installment} {settings.country == 'MX' ? 'Meses' : 'Cuotas'} </option>)
                             })
                         }
                     </select>
