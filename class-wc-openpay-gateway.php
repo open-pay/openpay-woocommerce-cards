@@ -323,7 +323,7 @@ if(!class_exists('WC_Openpay_Payment_Settings_Validation')) {
 
         $payment_settings = Array(
             'openpay_token' => $openpay_token,
-            'device_session_id' => $openpay_tokenized_card,
+            'device_session_id' => $device_session_id,
             'openpay_customer' => $openpay_customer,
             'openpay_card_points_confirm' => $openpay_card_points_confirm,
             'openpay_payment_plan' => $openpay_payment_plan

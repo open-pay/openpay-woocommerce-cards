@@ -2,6 +2,446 @@
 /******/ 	"use strict";
 /******/ 	var __webpack_modules__ = ({
 
+/***/ "./blocks/checkout-form/src/fields-validation/cardCvcValidation.js":
+/*!*************************************************************************!*\
+  !*** ./blocks/checkout-form/src/fields-validation/cardCvcValidation.js ***!
+  \*************************************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   CardCvcValidation: () => (/* binding */ CardCvcValidation)
+/* harmony export */ });
+const CardCvcValidation = openpayCardCvc => {
+  // Validación de campo no vacío
+  if (!openpayCardCvc.length) {
+    return 'El campo de CVV se encuentra vacío';
+  }
+  if (openpayCardCvc.length < 3) {
+    console.log(openpayCardCvc.length);
+    return 'Número de digitos de CVV incorrectos';
+  }
+
+  // Validación de texto solo números
+  if (/^[0-9]+$/.test(openpayCardCvc.trim())) {
+    message: 'El CVV solo debe contener números';
+  }
+};
+
+/***/ }),
+
+/***/ "./blocks/checkout-form/src/fields-validation/cardExpiryValidation.js":
+/*!****************************************************************************!*\
+  !*** ./blocks/checkout-form/src/fields-validation/cardExpiryValidation.js ***!
+  \****************************************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   CardExpiryValidation: () => (/* binding */ CardExpiryValidation)
+/* harmony export */ });
+const CardExpiryValidation = openpayCardExpiry => {
+  // Validación de campo no vacío
+  if (!openpayCardExpiry.length) {
+    return 'El campo de fecha de expiración de tarjeta se encuentra vacío';
+  }
+  if (openpayCardExpiry.length < 4) {
+    return 'Número de digitos de fecha de expiración de tarjeta incorrectos';
+  }
+
+  // Validación de texto solo números
+  if (/^[0-9]+$/.test(openpayCardExpiry.trim())) {
+    message: 'La fecha de expiración de tarjeta solo debe contener números';
+  }
+};
+
+/***/ }),
+
+/***/ "./blocks/checkout-form/src/fields-validation/cardNumberValidation.js":
+/*!****************************************************************************!*\
+  !*** ./blocks/checkout-form/src/fields-validation/cardNumberValidation.js ***!
+  \****************************************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   CardNumberValidation: () => (/* binding */ CardNumberValidation)
+/* harmony export */ });
+const CardNumberValidation = openpayCardNumber => {
+  // Validación de campo no vacío
+  if (!openpayCardNumber.length) {
+    return 'El campo de número de tarjeta se encuentra vacío';
+  }
+  if (openpayCardNumber.length < 16) {
+    return 'Numero de digitos de tarjeta incorrectos';
+  }
+
+  // Validación de texto solo números
+  if (/^[0-9]+$/.test(openpayCardNumber.trim())) {
+    message: 'El campo de número de tarjeta solo debe contener números';
+  }
+};
+
+/***/ }),
+
+/***/ "./blocks/checkout-form/src/fields-validation/holderNameValidation.js":
+/*!****************************************************************************!*\
+  !*** ./blocks/checkout-form/src/fields-validation/holderNameValidation.js ***!
+  \****************************************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   HolderNameValidation: () => (/* binding */ HolderNameValidation)
+/* harmony export */ });
+const HolderNameValidation = openpayHolderName => {
+  // Validación de campo no vacío
+  if (!openpayHolderName.length) {
+    return 'El campo de tarjetahabiente se encuentra vacío';
+  }
+
+  // Validación de texto sin números
+  if (/\d/.test(openpayHolderName.trim())) {
+    return 'El campo de tarjetahabiente no debe contener números';
+  }
+};
+
+/***/ }),
+
+/***/ "./blocks/checkout-form/src/fields-validation/openpayFieldsValidation.js":
+/*!*******************************************************************************!*\
+  !*** ./blocks/checkout-form/src/fields-validation/openpayFieldsValidation.js ***!
+  \*******************************************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   OpenpayFieldsValidation: () => (/* binding */ OpenpayFieldsValidation)
+/* harmony export */ });
+/* harmony import */ var _holderNameValidation__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./holderNameValidation */ "./blocks/checkout-form/src/fields-validation/holderNameValidation.js");
+/* harmony import */ var _cardNumberValidation__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./cardNumberValidation */ "./blocks/checkout-form/src/fields-validation/cardNumberValidation.js");
+/* harmony import */ var _cardExpiryValidation__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./cardExpiryValidation */ "./blocks/checkout-form/src/fields-validation/cardExpiryValidation.js");
+/* harmony import */ var _cardCvcValidation__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ./cardCvcValidation */ "./blocks/checkout-form/src/fields-validation/cardCvcValidation.js");
+
+
+
+
+const OpenpayFieldsValidation = (openpayHolderName, openpayCardNumber, openpayCardExpiry, openpayCardCvc) => {
+  const holderNameError = (0,_holderNameValidation__WEBPACK_IMPORTED_MODULE_0__.HolderNameValidation)(openpayHolderName);
+  if (holderNameError) {
+    return holderNameError;
+  }
+  const cardNumberError = (0,_cardNumberValidation__WEBPACK_IMPORTED_MODULE_1__.CardNumberValidation)(openpayCardNumber);
+  if (cardNumberError) {
+    return cardNumberError;
+  }
+  const cardExpiryError = (0,_cardExpiryValidation__WEBPACK_IMPORTED_MODULE_2__.CardExpiryValidation)(openpayCardExpiry);
+  if (cardExpiryError) {
+    return cardExpiryError;
+  }
+  const cardCvcError = (0,_cardCvcValidation__WEBPACK_IMPORTED_MODULE_3__.CardCvcValidation)(openpayCardCvc);
+  if (cardCvcError) {
+    return cardCvcError;
+  }
+};
+
+/***/ }),
+
+/***/ "./blocks/checkout-form/src/fields-validation/openpayServiceValidation.js":
+/*!********************************************************************************!*\
+  !*** ./blocks/checkout-form/src/fields-validation/openpayServiceValidation.js ***!
+  \********************************************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   OpenpayServiceValidation: () => (/* binding */ OpenpayServiceValidation)
+/* harmony export */ });
+const OpenpayServiceValidation = errorCode => {
+  var msg = "";
+  switch (errorCode) {
+    case 1000:
+      msg = "Servicio no disponible.";
+      break;
+    case 1001:
+      msg = "Los campos no tienen el formato correcto, o la petición no tiene campos que son requeridos.";
+      break;
+    case 1004:
+      msg = "Servicio no disponible.";
+      break;
+    case 1005:
+      msg = "Servicio no disponible.";
+      break;
+    case 2004:
+      msg = "El dígito verificador del número de tarjeta es inválido de acuerdo al algoritmo Luhn.";
+      break;
+    case 2005:
+      msg = "La fecha de expiración de la tarjeta es anterior a la fecha actual.";
+      break;
+    case 2006:
+      msg = "El código de seguridad de la tarjeta (CVV2) no fue proporcionado o es incorrecto";
+      break;
+    case 1:
+      msg = "El nombre del titular de la tarjeta no fue proporcionado o tiene un formato inválido.";
+      break;
+    default:
+      //Demás errores 400
+      msg = "La petición no pudo ser procesada.";
+      break;
+  }
+  return msg;
+};
+
+/***/ }),
+
+/***/ "./blocks/checkout-form/src/form-fields/cardCvcComponent.js":
+/*!******************************************************************!*\
+  !*** ./blocks/checkout-form/src/form-fields/cardCvcComponent.js ***!
+  \******************************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony import */ var react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! react/jsx-runtime */ "react/jsx-runtime");
+/* harmony import */ var react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__);
+
+const cardCvcComponent = props => {
+  const cardCvcInputValidation = e => {
+    const value = e.target.value;
+    if (/^\d{0,4}$/.test(value)) {
+      props.setOpenpayCardCvc(value);
+    }
+  };
+  return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsxs)("div", {
+    class: "wc-block-components-text-input is-active",
+    style: {
+      flex: '1 0 calc(50% - 12px)'
+    },
+    children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsxs)("label", {
+      for: "openpay-card-cvc",
+      children: ["CVV ", /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)("span", {
+        class: "required",
+        children: "*"
+      })]
+    }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)("input", {
+      id: "openpay-card-cvc",
+      name: "openpayCardCvc",
+      class: "input-text wc-credit-card-form-card-cvc openpay-card-input-cvc",
+      value: props.openpayCardCvc,
+      onChange: cardCvcInputValidation,
+      type: "password",
+      autocomplete: "off",
+      placeholder: "CVC",
+      maxlength: "4",
+      "data-openpay-card": "cvv2"
+    })]
+  });
+};
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (cardCvcComponent);
+
+/***/ }),
+
+/***/ "./blocks/checkout-form/src/form-fields/cardExpiryComponent.js":
+/*!*********************************************************************!*\
+  !*** ./blocks/checkout-form/src/form-fields/cardExpiryComponent.js ***!
+  \*********************************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony import */ var react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! react/jsx-runtime */ "react/jsx-runtime");
+/* harmony import */ var react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__);
+
+const cardExpiryComponent = props => {
+  const cardExpiryInputValidation = e => {
+    const value = e.target.value;
+    if (/^\d{0,4}$/.test(value)) {
+      props.setOpenpayCardExpiry(value);
+    }
+  };
+  return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsxs)("div", {
+    class: "wc-block-components-text-input is-active",
+    style: {
+      flex: '1 0 calc(50% - 12px)'
+    },
+    children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsxs)("label", {
+      for: "openpay-card-expiry",
+      children: ["Expira (MM/AA) ", /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)("span", {
+        class: "required",
+        children: "*"
+      })]
+    }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)("input", {
+      id: "openpay-card-expiry",
+      name: "openpayCardExpiry",
+      class: "input-text wc-credit-card-form-card-expiry",
+      value: props.openpayCardExpiry,
+      onChange: cardExpiryInputValidation,
+      type: "text",
+      autocomplete: "off",
+      placeholder: "MM / AA",
+      maxlength: "4",
+      "data-openpay-card": "expiration_year"
+    })]
+  });
+};
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (cardExpiryComponent);
+
+/***/ }),
+
+/***/ "./blocks/checkout-form/src/form-fields/cardNumberComponent.js":
+/*!*********************************************************************!*\
+  !*** ./blocks/checkout-form/src/form-fields/cardNumberComponent.js ***!
+  \*********************************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony import */ var react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! react/jsx-runtime */ "react/jsx-runtime");
+/* harmony import */ var react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__);
+
+const holderNameComponent = props => {
+  const cardNumberInputValidation = e => {
+    const value = e.target.value;
+    if (/^\d{0,16}$/.test(value)) {
+      props.setOpenpayCardNumber(value);
+      console.log(props.openpayCardNumber.length);
+    }
+  };
+  return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsxs)("div", {
+    className: "wc-block-components-text-input is-active",
+    style: {
+      flex: '0 0 100%'
+    },
+    children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsxs)("label", {
+      htmlFor: "openpay-card-number",
+      children: ["N\xFAmero de tarjeta ", /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)("span", {
+        className: "required",
+        children: "*"
+      })]
+    }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)("input", {
+      id: "openpay-card-number",
+      name: "openpayCardNumber",
+      className: "wc-credit-card-form-card-number",
+      value: props.openpayCardNumber,
+      onChange: cardNumberInputValidation,
+      type: "text",
+      maxLength: "16",
+      autoComplete: "off",
+      placeholder: "\u2022\u2022\u2022\u2022 \u2022\u2022\u2022\u2022 \u2022\u2022\u2022\u2022 \u2022\u2022\u2022\u2022",
+      "data-openpay-card": "card_number"
+    })]
+  });
+};
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (holderNameComponent);
+
+/***/ }),
+
+/***/ "./blocks/checkout-form/src/form-fields/holderNameComponent.js":
+/*!*********************************************************************!*\
+  !*** ./blocks/checkout-form/src/form-fields/holderNameComponent.js ***!
+  \*********************************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony import */ var react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! react/jsx-runtime */ "react/jsx-runtime");
+/* harmony import */ var react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__);
+
+const holderNameComponent = props => {
+  const holderNameInputValidation = e => {
+    const value = e.target.value;
+    if (/^[A-Z]+$/i.test(value) || value === "") {
+      props.setOpenpayHolderName(value);
+      console.log(props.openpayHolderName);
+    }
+  };
+  return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsxs)("div", {
+    className: "wc-block-components-text-input is-active",
+    style: {
+      flex: '0 0 100%'
+    },
+    children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)("input", {
+      id: "openpay-holder-name",
+      name: "openpayHolderName",
+      value: props.openpayHolderName,
+      onChange: holderNameInputValidation,
+      type: "text",
+      autoComplete: "off",
+      placeholder: "Nombre del tarjetahabiente",
+      "data-openpay-card": "holder_name"
+    }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsxs)("label", {
+      htmlFor: "openpay-holder-name",
+      children: ["Nombre del t\xEDtular", /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)("span", {
+        className: "required",
+        children: "*"
+      })]
+    })]
+  });
+};
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (holderNameComponent);
+
+/***/ }),
+
+/***/ "./blocks/checkout-form/src/form-fields/saveCardAuthComponent.js":
+/*!***********************************************************************!*\
+  !*** ./blocks/checkout-form/src/form-fields/saveCardAuthComponent.js ***!
+  \***********************************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony import */ var react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! react/jsx-runtime */ "react/jsx-runtime");
+/* harmony import */ var react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__);
+
+const saveCardAuthComponent = props => {
+  const saveCardAuthValidation = e => {
+    props.setOpenpaySaveCardAuth(!props.openpaySaveCardAuth);
+    console.log(props.openpaySaveCardAuth);
+  };
+  return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)("div", {
+    className: "wc-block-components-checkbox",
+    children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsxs)("label", {
+      htmlFor: "openpay-save-card-auth",
+      children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)("input", {
+        id: "openpay-save-card-auth",
+        name: "openpaySaveCardAuth",
+        class: "wc-block-components-checkbox__input",
+        value: props.openpaySaveCardAuth,
+        onChange: saveCardAuthValidation,
+        type: "checkbox",
+        "aria-invalid": "false"
+      }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)("svg", {
+        class: "wc-block-components-checkbox__mark",
+        "aria-hidden": "true",
+        xmlns: "http://www.w3.org/2000/svg",
+        viewBox: "0 0 24 20",
+        children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)("path", {
+          d: "M9 16.2L4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4L9 16.2z"
+        })
+      }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)("span", {
+        class: "wc-block-components-checkbox__label",
+        style: {
+          fontSize: '1.25em'
+        },
+        children: "Guardar Tarjeta"
+      })]
+    })
+  });
+};
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (saveCardAuthComponent);
+
+/***/ }),
+
 /***/ "./blocks/checkout-form/src/form.js":
 /*!******************************************!*\
   !*** ./blocks/checkout-form/src/form.js ***!
@@ -16,9 +456,23 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var react__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(react__WEBPACK_IMPORTED_MODULE_0__);
 /* harmony import */ var _wordpress_html_entities__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! @wordpress/html-entities */ "@wordpress/html-entities");
 /* harmony import */ var _wordpress_html_entities__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__webpack_require__.n(_wordpress_html_entities__WEBPACK_IMPORTED_MODULE_1__);
-/* harmony import */ var axios__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! axios */ "./node_modules/axios/lib/axios.js");
-/* harmony import */ var react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! react/jsx-runtime */ "react/jsx-runtime");
-/* harmony import */ var react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2___default = /*#__PURE__*/__webpack_require__.n(react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__);
+/* harmony import */ var axios__WEBPACK_IMPORTED_MODULE_10__ = __webpack_require__(/*! axios */ "./node_modules/axios/lib/axios.js");
+/* harmony import */ var _fields_validation_openpayFieldsValidation__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./fields-validation/openpayFieldsValidation */ "./blocks/checkout-form/src/fields-validation/openpayFieldsValidation.js");
+/* harmony import */ var _form_fields_holderNameComponent__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ./form-fields/holderNameComponent */ "./blocks/checkout-form/src/form-fields/holderNameComponent.js");
+/* harmony import */ var _form_fields_cardNumberComponent__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ./form-fields/cardNumberComponent */ "./blocks/checkout-form/src/form-fields/cardNumberComponent.js");
+/* harmony import */ var _form_fields_cardExpiryComponent__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! ./form-fields/cardExpiryComponent */ "./blocks/checkout-form/src/form-fields/cardExpiryComponent.js");
+/* harmony import */ var _form_fields_cardCvcComponent__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! ./form-fields/cardCvcComponent */ "./blocks/checkout-form/src/form-fields/cardCvcComponent.js");
+/* harmony import */ var _form_fields_saveCardAuthComponent__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(/*! ./form-fields/saveCardAuthComponent */ "./blocks/checkout-form/src/form-fields/saveCardAuthComponent.js");
+/* harmony import */ var _fields_validation_openpayServiceValidation__WEBPACK_IMPORTED_MODULE_8__ = __webpack_require__(/*! ./fields-validation/openpayServiceValidation */ "./blocks/checkout-form/src/fields-validation/openpayServiceValidation.js");
+/* harmony import */ var react_jsx_runtime__WEBPACK_IMPORTED_MODULE_9__ = __webpack_require__(/*! react/jsx-runtime */ "react/jsx-runtime");
+/* harmony import */ var react_jsx_runtime__WEBPACK_IMPORTED_MODULE_9___default = /*#__PURE__*/__webpack_require__.n(react_jsx_runtime__WEBPACK_IMPORTED_MODULE_9__);
+
+
+
+
+
+
+
 
 
 
@@ -30,10 +484,6 @@ const settings = getSetting('wc_openpay_gateway_data', {});
 const label = (0,_wordpress_html_entities__WEBPACK_IMPORTED_MODULE_1__.decodeEntities)(settings.title);
 console.log('{ REACT INIT SETTINGS } - ' + JSON.stringify(settings));
 const Form = props => {
-  //Agregamos a settings datos hardcodeados
-  //settings.useCardPoints = true;
-  //settings.openpayApi = "";
-
   const {
     eventRegistration,
     emitResponse,
@@ -70,10 +520,6 @@ const Form = props => {
     zIndex: 10
   };
   const tokenRequest = async () => {
-    var card = openpayCardNumber;
-    var cvc = openpayCardCvc;
-    var expires = openpayCardExpiry;
-    console.log('{ REACT } - ' + card + ' - ' + cvc + ' - ' + expires);
     var data = {
       holder_name: openpayHolderName,
       card_number: openpayCardNumber,
@@ -91,6 +537,14 @@ const Form = props => {
     };
     console.log('{ REACT } - ' + JSON.stringify(data));
     const result = await tokenRequestWrapper(data);
+    console.log('Prueba 2');
+    console.log(result);
+    if (result.data.error_code) {
+      console.log('Prueba 2');
+      return {
+        errorCode: result.data.error_code
+      };
+    }
     openpayToken = result.data.id;
     openpayTokenizedCard = result.data.card.card_number;
     if (result.data.card.points_card === true && settings.cardPoints && installments == 0 && settings.country == 'MX') {
@@ -103,15 +557,10 @@ const Form = props => {
       OpenPay.token.create(data, successResponse => {
         resolve(successResponse);
       }, errorResponse => {
-        reject(errorResponse);
+        resolve(errorResponse);
+        console.log('Prueba 1');
       });
     });
-  };
-  const validateCardNumber = e => {
-    const value = e.target.value;
-    if (/^\d{0,16}$/.test(value)) {
-      setOpenpayCardNumber(value);
-    }
   };
   (0,react__WEBPACK_IMPORTED_MODULE_0__.useEffect)(() => {
     const unsubscribe = onPaymentSetup(async () => {
@@ -121,8 +570,30 @@ const Form = props => {
       //console.log('Billing - ' + JSON.stringify(billing))
       //console.log('Billing - ' + billing.billingAddress.first_name);
 
+      const openpayFieldsErrorMessage = (0,_fields_validation_openpayFieldsValidation__WEBPACK_IMPORTED_MODULE_2__.OpenpayFieldsValidation)(openpayHolderName, openpayCardNumber, openpayCardExpiry, openpayCardCvc);
+      if (openpayFieldsErrorMessage) {
+        return {
+          type: emitResponse.responseTypes.ERROR,
+          message: openpayFieldsErrorMessage
+        };
+      }
       if (openpayHolderName.length) {
-        await tokenRequest();
+        const errorCode = await tokenRequest();
+        if (errorCode) {
+          const openpayServiceErrorMessage = (0,_fields_validation_openpayServiceValidation__WEBPACK_IMPORTED_MODULE_8__.OpenpayServiceValidation)(errorCode);
+          if (openpayServiceErrorMessage) {
+            return {
+              type: emitResponse.responseTypes.ERROR,
+              message: openpayServiceErrorMessage
+            };
+          }
+        }
+        if (errorMessage) {
+          return {
+            type: emitResponse.responseTypes.ERROR,
+            message: errorMessage
+          };
+        }
         console.log('{ REACT } - after token request');
         if (openpayToken.length) {
           return {
@@ -167,7 +638,7 @@ const Form = props => {
       if (openpayCardNumber.length === 6) {
         const endpoint = `${settings.openpayAPI}/${settings.merchantId}/bines/${openpayCardNumber}/promotions`;
         setActivateForm(false);
-        axios__WEBPACK_IMPORTED_MODULE_3__["default"].get(endpoint).then(response => {
+        axios__WEBPACK_IMPORTED_MODULE_10__["default"].get(endpoint).then(response => {
           setCardType(response.data.cardType);
           setPayments(settings.installments.payments);
           console.log(response.data.installments);
@@ -183,7 +654,7 @@ const Form = props => {
         console.log(settings);
         const endpoint = `${settings.openpayAPI}/${settings.merchantId}/bines/${openpayCardNumber}/promotions`;
         setActivateForm(false);
-        axios__WEBPACK_IMPORTED_MODULE_3__["default"].get(endpoint).then(response => {
+        axios__WEBPACK_IMPORTED_MODULE_10__["default"].get(endpoint).then(response => {
           setCardType(response.data.cardType);
           if (response.data.installments.paymentPlan) setPayments(response.data.installments);
           setActivateForm(true);
@@ -198,7 +669,7 @@ const Form = props => {
         console.log(settings);
         const endpoint = `${settings.openpayAPI}/cards/validate-bin?bin=${openpayCardNumber}`;
         setActivateForm(false);
-        axios__WEBPACK_IMPORTED_MODULE_3__["default"].get(endpoint).then(response => {
+        axios__WEBPACK_IMPORTED_MODULE_10__["default"].get(endpoint).then(response => {
           setCardType(response.data.card_type);
           if (response.data.card_type == 'CREDIT') setPayments(Array.from({
             length: 36
@@ -222,7 +693,7 @@ const Form = props => {
 
   //return decodeEntities( Form || '' );
   //return Form;
-  return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsxs)("div", {
+  return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_9__.jsxs)("div", {
     id: "payment_form_openpay_cards",
     style: {
       marginBottom: '20px',
@@ -231,30 +702,30 @@ const Form = props => {
       gap: '0 16px',
       justifyContent: 'space-between'
     },
-    children: [!activateForm && /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsxs)("div", {
+    children: [!activateForm && /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_9__.jsxs)("div", {
       style: spinnerOverlayStyle,
-      children: [" ", /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)("div", {
+      children: [" ", /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_9__.jsx)("div", {
         className: ""
       })]
-    }), settings.userLoggedIn == true ? /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)("div", {
+    }), settings.userLoggedIn == true ? /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_9__.jsx)("div", {
       class: "wc-blocks-components-select is-active",
       style: {
         flex: '0 0 100%'
       },
-      children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsxs)("div", {
+      children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_9__.jsxs)("div", {
         class: "wc-blocks-components-select__container",
-        children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)("label", {
+        children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_9__.jsx)("label", {
           class: "wc-blocks-components-select__label",
           for: "openpay-selected-card",
           children: "Selecciona la tarjeta"
-        }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)("select", {
+        }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_9__.jsx)("select", {
           class: "wc-blocks-components-select__select",
           id: "openpay-selected-card",
           name: "openpaySelectedCard",
           onChange: e => setSelectedCard(e.target.value),
           placeholder: "Selecciona la tarjeta",
           children: settings.savedCardsList.map((card, index) => {
-            return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsxs)("option", {
+            return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_9__.jsxs)("option", {
               value: card.value,
               children: [" ", card.name, " "]
             }, index);
@@ -264,182 +735,57 @@ const Form = props => {
     }) : null, openpaySelectedCard == 'new' ?
     /*#__PURE__*/
     /* OPENPAY HOLDER NAME */
-    (0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsxs)("div", {
-      class: "wc-block-components-text-input is-active",
-      style: {
-        flex: '0 0 100%'
-      },
-      children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)("input", {
-        id: "openpay-holder-name",
-        name: "openpayHolderName",
-        value: openpayHolderName,
-        onChange: e => setOpenpayHolderName(e.target.value),
-        type: "text",
-        autocomplete: "off",
-        placeholder: "Nombre del tarjetahabiente",
-        "data-openpay-card": "holder_name"
-      }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsxs)("label", {
-        for: "openpay-holder-name",
-        children: ["Nombre del t\xEDtular", /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)("span", {
-          class: "required",
-          children: "*"
-        })]
-      })]
+    (0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_9__.jsx)(_form_fields_holderNameComponent__WEBPACK_IMPORTED_MODULE_3__["default"], {
+      openpayHolderName: openpayHolderName,
+      setOpenpayHolderName: setOpenpayHolderName
     }) : null, openpaySelectedCard == 'new' ?
     /*#__PURE__*/
     /* OPENPAY CARD NUMBER */
-    (0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsxs)("div", {
-      class: "wc-block-components-text-input is-active",
-      style: {
-        flex: '0 0 100%'
-      },
-      children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsxs)("label", {
-        for: "openpay-card-number",
-        children: ["N\xFAmero de tarjeta ", /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)("span", {
-          class: "required",
-          children: "*"
-        })]
-      }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)("input", {
-        id: "openpay-card-number",
-        name: "openpayCardNumber",
-        class: "wc-credit-card-form-card-number",
-        value: openpayCardNumber,
-        onChange: validateCardNumber,
-        type: "text",
-        maxlength: "16",
-        autocomplete: "off",
-        placeholder: "\u2022\u2022\u2022\u2022 \u2022\u2022\u2022\u2022 \u2022\u2022\u2022\u2022 \u2022\u2022\u2022\u2022",
-        "data-openpay-card": "card_number"
-      })]
+    (0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_9__.jsx)(_form_fields_cardNumberComponent__WEBPACK_IMPORTED_MODULE_4__["default"], {
+      openpayCardNumber: openpayCardNumber,
+      setOpenpayCardNumber: setOpenpayCardNumber
     }) : null, openpaySelectedCard == 'new' ?
     /*#__PURE__*/
     /* OPENPAY EXPIRY DATE */
-    (0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsxs)("div", {
-      class: "wc-block-components-text-input is-active",
-      style: {
-        flex: '1 0 calc(50% - 12px)'
-      },
-      children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsxs)("label", {
-        for: "openpay-card-expiry",
-        children: ["Expira (MM/AA) ", /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)("span", {
-          class: "required",
-          children: "*"
-        })]
-      }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)("input", {
-        id: "openpay-card-expiry",
-        name: "openpayCardExpiry",
-        class: "input-text wc-credit-card-form-card-expiry",
-        value: openpayCardExpiry,
-        onChange: e => setOpenpayCardExpiry(e.target.value),
-        type: "text",
-        autocomplete: "off",
-        placeholder: "MM / AA",
-        maxlength: "4",
-        "data-openpay-card": "expiration_year"
-      })]
-    }) : null, openpaySelectedCard != 'new' && settings.saveCardMode == 2 && settings.country == 'PE' ? null : /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsxs)("div", {
-      class: "wc-block-components-text-input is-active",
-      style: {
-        flex: '1 0 calc(50% - 12px)'
-      },
-      children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsxs)("label", {
-        for: "openpay-card-cvc",
-        children: ["CVV ", /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)("span", {
-          class: "required",
-          children: "*"
-        })]
-      }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)("input", {
-        id: "openpay-card-cvc",
-        name: "openpayCardCvc",
-        class: "input-text wc-credit-card-form-card-cvc openpay-card-input-cvc",
-        value: openpayCardCvc,
-        onChange: e => setOpenpayCardCvc(e.target.value),
-        type: "password",
-        autocomplete: "off",
-        placeholder: "CVC",
-        maxlength: "4",
-        "data-openpay-card": "cvv2"
-      })]
-    }), settings.userLoggedIn == true && settings.saveCardMode != 0 && openpaySelectedCard == 'new' ? /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)("div", {
-      class: "wc-block-components-checkbox",
-      children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsxs)("label", {
-        for: "openpay-save-card-auth",
-        children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)("input", {
-          id: "openpay-save-card-auth",
-          name: "openpaySaveCardAuth",
-          class: "wc-block-components-checkbox__input",
-          value: openpaySaveCardAuth,
-          onChange: e => {
-            setOpenpaySaveCardAuth(!openpaySaveCardAuth);
-            console.log(openpaySaveCardAuth);
-          },
-          type: "checkbox",
-          "aria-invalid": "false"
-        }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)("svg", {
-          class: "wc-block-components-checkbox__mark",
-          "aria-hidden": "true",
-          xmlns: "http://www.w3.org/2000/svg",
-          viewBox: "0 0 24 20",
-          children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)("path", {
-            d: "M9 16.2L4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4L9 16.2z"
-          })
-        }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)("span", {
-          class: "wc-block-components-checkbox__label",
-          style: {
-            fontSize: '1.25em'
-          },
-          children: "Guardar Tarjeta"
-        })]
-      })
-    }) : null, /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)("div", {
-      class: "wc-block-components-text-input is-active",
-      style: {
-        marginBottom: '20px'
-      },
-      children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)("label", {
-        for: "save_cc",
-        class: "label",
-        children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsxs)("div", {
-          class: "tooltip",
-          children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)("input", {
-            type: "checkbox",
-            name: "save_cc",
-            id: "save_cc"
-          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)("span", {
-            children: "Guardar tarjeta"
-          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)("img", {
-            alt: "",
-            src: "<?php echo $this->images_dir ?>tooltip_symbol.svg"
-          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)("span", {
-            class: "tooltiptext",
-            children: "Al guardar los datos de tu tarjeta agilizar\xE1s tus pagos futuros y podr\xE1s usarla como m\xE9todo de pago guardado."
-          })]
-        })
-      })
-    }), payments != null && (cardType == 'credit' || cardType == 'CREDIT') ? /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)("div", {
+    (0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_9__.jsx)(_form_fields_cardExpiryComponent__WEBPACK_IMPORTED_MODULE_5__["default"], {
+      openpayCardExpiry: openpayCardExpiry,
+      setOpenpayCardExpiry: setOpenpayCardExpiry
+    }) : null, openpaySelectedCard != 'new' && settings.saveCardMode == 2 && settings.country == 'PE' ? null :
+    /*#__PURE__*/
+    /* OPENPAY CARD CVC */
+    (0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_9__.jsx)(_form_fields_cardCvcComponent__WEBPACK_IMPORTED_MODULE_6__["default"], {
+      openpayCardCvc: openpayCardCvc,
+      setOpenpayCardCvc: setOpenpayCardCvc
+    }), settings.userLoggedIn == true && settings.saveCardMode != 0 && openpaySelectedCard == 'new' ?
+    /*#__PURE__*/
+    /* SAVE CARD AUTHORIZATION */
+    (0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_9__.jsx)(_form_fields_saveCardAuthComponent__WEBPACK_IMPORTED_MODULE_7__["default"], {
+      openpaySaveCardAuth: openpaySaveCardAuth,
+      setOpenpaySaveCardAuth: setOpenpaySaveCardAuth
+    }) : null, payments != null && (cardType == 'credit' || cardType == 'CREDIT') ? /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_9__.jsx)("div", {
       class: "wc-blocks-components-select is-active",
       style: {
         flex: '0 0 100%'
       },
-      children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsxs)("div", {
+      children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_9__.jsxs)("div", {
         class: "wc-blocks-components-select__container",
-        children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)("label", {
+        children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_9__.jsx)("label", {
           class: "wc-blocks-components-select__label",
           for: "installments",
           children: "Meses sin intereses"
-        }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsxs)("select", {
+        }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_9__.jsxs)("select", {
           class: "wc-blocks-components-select__select",
           name: "installments",
           id: "installments",
           placeholder: "Pago de contado",
           value: installments,
           onChange: e => setInstallments(e.target.value),
-          children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)("option", {
+          children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_9__.jsx)("option", {
             value: "0",
             selected: "selected",
             children: " Pago de contado "
           }), payments.map((installment, index) => {
-            return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsxs)("option", {
+            return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_9__.jsxs)("option", {
               value: installment,
               children: [" ", installment, " Meses "]
             }, index);

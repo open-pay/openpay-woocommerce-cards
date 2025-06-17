@@ -1,19 +1,25 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect} from 'react'
 import { decodeEntities } from '@wordpress/html-entities';
 import axios from "axios";
+import {OpenpayFieldsValidation} from "./fields-validation/openpayFieldsValidation";
+import HolderNameComponent from "./form-fields/holderNameComponent";
+import CardNumberComponent from "./form-fields/cardNumberComponent";
+import CardExpiryComponent from "./form-fields/cardExpiryComponent";
+import CardCvcComponent from "./form-fields/cardCvcComponent";
+import SaveCardAuthComponent from "./form-fields/saveCardAuthComponent";
+import {OpenpayServiceValidation} from "./fields-validation/openpayServiceValidation";
+
 
 const { getSetting } = window.wc.wcSettings
 const settings = getSetting( 'wc_openpay_gateway_data', {} )
 const label = decodeEntities( settings.title )
 console.log('{ REACT INIT SETTINGS } - ' + JSON.stringify(settings));
 
-const Form = ( props ) => {
-    //Agregamos a settings datos hardcodeados
-    //settings.useCardPoints = true;
-    //settings.openpayApi = "";
 
-	const { eventRegistration, emitResponse, billing } = props;
-	const { onPaymentSetup } = eventRegistration;
+const Form = ( props ) => {
+
+    const { eventRegistration, emitResponse, billing } = props;
+    const { onPaymentSetup } = eventRegistration;
 
     const [openpayHolderName, setOpenpayHolderName] = useState('');
     const [openpayCardNumber, setOpenpayCardNumber] = useState('');
@@ -42,14 +48,10 @@ const Form = ( props ) => {
         justifyContent: 'center',
         alignItems: 'center',
         zIndex: 10,
-      };
+    };
 
 
     const tokenRequest = async () => {
-        var card = openpayCardNumber;
-        var cvc = openpayCardCvc;
-        var expires = openpayCardExpiry;
-        console.log('{ REACT } - ' + card + ' - ' + cvc + ' - ' + expires);
 
         var data = {
             holder_name: openpayHolderName,
@@ -64,14 +66,23 @@ const Form = ( props ) => {
                 city:billing.billingAddress.city,
                 postal_code:billing.billingAddress.postcode,
                 country_code:billing.billingAddress.country
-            }    
+            }
         };
 
         console.log('{ REACT } - ' + JSON.stringify(data));
 
         const result = await tokenRequestWrapper(data);
+        console.log('Prueba 2');
+        console.log(result);
+        if(result.data.error_code){
+            console.log('Prueba 2');
+            return {
+                errorCode: result.data.error_code,
+            };
+        }
         openpayToken = result.data.id;
         openpayTokenizedCard = result.data.card.card_number;
+
         if(result.data.card.points_card === true && settings.cardPoints && installments == 0 && settings.country == 'MX') {
             const confirmResult = confirm("¿Desea usar los puntos?")
             confirmUseCardPoints = confirmResult;
@@ -79,71 +90,90 @@ const Form = ( props ) => {
     }
 
     const tokenRequestWrapper = (data) => {
+
         return new Promise((resolve, reject) => {
             OpenPay.token.create(data, (successResponse) => {
                 resolve(successResponse);
             } , (errorResponse) => {
-                reject(errorResponse);
+                resolve(errorResponse);
+                console.log('Prueba 1');
             });
         });
+
     }
 
-
-    const validateCardNumber = (e) => {
-        const value = e.target.value;
-        if(/^\d{0,16}$/.test(value)){
-            setOpenpayCardNumber(value);
-        }
-    }
-    
     useEffect( () => {
-		const unsubscribe = onPaymentSetup( async () => {
+        const unsubscribe = onPaymentSetup( async () => {
 
-
-			//console.log('onPaymentSetup_openpayHolderName - ' + openpayHolderName);
+            //console.log('onPaymentSetup_openpayHolderName - ' + openpayHolderName);
             //console.log('onPaymentSetup_deviceSessionId - ' + deviceSessionId);
             //console.log('onPaymentSetup_CARD - ' + card );
             //console.log('Billing - ' + JSON.stringify(billing))
             //console.log('Billing - ' + billing.billingAddress.first_name);
 
-        if(openpayHolderName.length){
-            await tokenRequest();
-            console.log('{ REACT } - after token request');
+            const openpayFieldsErrorMessage = OpenpayFieldsValidation(openpayHolderName,openpayCardNumber,openpayCardExpiry,openpayCardCvc);
+            if(openpayFieldsErrorMessage){
+                return {
+                    type: emitResponse.responseTypes.ERROR,
+                    message: openpayFieldsErrorMessage,
+                };
+            }
 
-            if ( openpayToken.length) {
+            if(openpayHolderName.length){
+
+               const errorCode = await tokenRequest();
+               if(errorCode){
+                    const openpayServiceErrorMessage = OpenpayServiceValidation(errorCode);
+                    if(openpayServiceErrorMessage){
+                        return {
+                            type: emitResponse.responseTypes.ERROR,
+                            message: openpayServiceErrorMessage,
+                        };
+                    }
+               }
+
+                if(errorMessage){
+                    return {
+                        type: emitResponse.responseTypes.ERROR,
+                        message: errorMessage,
+                    };
+                }
+                console.log('{ REACT } - after token request');
+
+                if ( openpayToken.length) {
+                    return {
+                        type: emitResponse.responseTypes.SUCCESS,
+                        meta: {
+                            paymentMethodData: {
+                                openpay_token: openpayToken,
+                                openpay_tokenized_card: openpayTokenizedCard,
+                                device_session_id: deviceSessionId,
+                                openpay_save_card_auth: openpaySaveCardAuth,
+                                openpay_selected_card: openpaySelectedCard,
+                                ...(confirmUseCardPoints && {openpay_card_points_confirm: 'ONLY_POINTS'}),
+                                ...(installments > 0 && { openpay_selected_installment: installments})
+                            },
+                        },
+                    };
+                }
+            }else{
                 return {
                     type: emitResponse.responseTypes.SUCCESS,
                     meta: {
                         paymentMethodData: {
-                            openpay_token: openpayToken,
-                            openpay_tokenized_card: openpayTokenizedCard,
                             device_session_id: deviceSessionId,
-                            openpay_save_card_auth: openpaySaveCardAuth,
                             openpay_selected_card: openpaySelectedCard,
-                            ...(confirmUseCardPoints && {openpay_card_points_confirm: 'ONLY_POINTS'}),
-                            ...(installments > 0 && { openpay_selected_installment: installments})
+                            openpay_card_cvc: openpayCardCvc
                         },
                     },
-                };
+                }
             }
-        }else{
-            return {
-                type: emitResponse.responseTypes.SUCCESS,
-                meta: {
-                    paymentMethodData: {
-                        device_session_id: deviceSessionId,
-                        openpay_selected_card: openpaySelectedCard,
-                        openpay_card_cvc: openpayCardCvc
-                    },
-                },
-            }
-        }
 
-			return {
-				type: emitResponse.responseTypes.ERROR,
-				message: 'There was an error',
-			};
-		} );
+            return {
+                type: emitResponse.responseTypes.ERROR,
+                message: 'There was an error',
+            };
+        } );
 
         //Llamada al api para obtener los bines
         if(settings.country == 'MX') {
@@ -163,11 +193,12 @@ const Form = ( props ) => {
             }
         } else if (settings.country == 'PE') {
             if(openpayCardNumber.length === 6){
+                console.log(settings)
                 const endpoint = `${settings.openpayAPI}/${settings.merchantId}/bines/${openpayCardNumber}/promotions`
                 setActivateForm(false);
                 axios.get(endpoint).then((response) => {
                     setCardType(response.data.cardType);
-                    if(settings.installments.paymentPlan) setPayments(response.data.installments);
+                    if(response.data.installments.paymentPlan ) setPayments(response.data.installments);
                     setActivateForm(true);
                 }).catch((error) => {
                     console.log(error)
@@ -192,157 +223,107 @@ const Form = ( props ) => {
                 });
             }
         }
-		// Unsubscribes when this component is unmounted.
-		return () => {
-			unsubscribe();
-		};
-	}, [
-		emitResponse.responseTypes.ERROR,
-		emitResponse.responseTypes.SUCCESS,
+        // Unsubscribes when this component is unmounted.
+        return () => {
+            unsubscribe();
+        };
+    }, [
+        emitResponse.responseTypes.ERROR,
+        emitResponse.responseTypes.SUCCESS,
         //billing,
-		onPaymentSetup,
+        onPaymentSetup,
         openpayHolderName,
         openpayCardNumber,
         openpayCardExpiry,
         openpayCardCvc,
         openpaySaveCardAuth,
         openpaySelectedCard,
-        openpayCardCvc, 
+        openpayCardCvc,
         installments
-	] );
+    ] );
 
-	//return decodeEntities( Form || '' );
+    //return decodeEntities( Form || '' );
     //return Form;
     return (
-        
+
         <div id="payment_form_openpay_cards" style={{ marginBottom: '20px', display: 'flex', flexWrap: 'wrap', gap: '0 16px', justifyContent: 'space-between'}}>
 
             { !activateForm && (<div style={spinnerOverlayStyle}> <div className="" /></div>)}
             {settings.userLoggedIn == true ?
-            <div class="wc-blocks-components-select is-active" style={{flex: '0 0 100%'}}>
-                <div class="wc-blocks-components-select__container">
-                    <label class="wc-blocks-components-select__label" for="openpay-selected-card">Selecciona la tarjeta</label>
-                    <select class="wc-blocks-components-select__select"
-                        id="openpay-selected-card"
-                        name="openpaySelectedCard"
-                        onChange={e => setSelectedCard(e.target.value)}
-                        placeholder="Selecciona la tarjeta" >
-                        {
-                            settings.savedCardsList.map( (card, index ) => {
-                                return (<option key={index} value={card.value}> {card.name} </option>)
-                            })
-                        }
-                    </select>
-                </div>
-            </div> : null}
+                <div class="wc-blocks-components-select is-active" style={{flex: '0 0 100%'}}>
+                    <div class="wc-blocks-components-select__container">
+                        <label class="wc-blocks-components-select__label" for="openpay-selected-card">Selecciona la tarjeta</label>
+                        <select class="wc-blocks-components-select__select"
+                                id="openpay-selected-card"
+                                name="openpaySelectedCard"
+                                onChange={e => setSelectedCard(e.target.value)}
+                                placeholder="Selecciona la tarjeta" >
+                            {
+                                settings.savedCardsList.map( (card, index ) => {
+                                    return (<option key={index} value={card.value}> {card.name} </option>)
+                                })
+                            }
+                        </select>
+                    </div>
+                </div> : null}
 
-            { openpaySelectedCard == 'new' ? /* OPENPAY HOLDER NAME */
-            <div class="wc-block-components-text-input is-active" style={{flex: '0 0 100%'}}>
-                <input 
-                    id="openpay-holder-name"
-                    name="openpayHolderName"  
-                    value={openpayHolderName} 
-                    onChange={e => setOpenpayHolderName(e.target.value)}
-                    type="text" 
-                    autocomplete="off" 
-                    placeholder="Nombre del tarjetahabiente" 
-                    data-openpay-card="holder_name" />
-                    <label for="openpay-holder-name">Nombre del títular
-                        <span class="required">*</span>
-                    </label>
-            </div> : null }
 
-            { openpaySelectedCard == 'new' ? /* OPENPAY CARD NUMBER */
-            <div class="wc-block-components-text-input is-active" style={{flex: '0 0 100%'}} >
-                <label for="openpay-card-number">Número de tarjeta <span class="required">*</span></label>
-                <input 
-                 id="openpay-card-number"
-                 name="openpayCardNumber"
-                 class="wc-credit-card-form-card-number"
-                 value={openpayCardNumber} 
-                 onChange={ validateCardNumber }
-                 type="text"
-                 maxlength="16"
-                 autocomplete="off" 
-                 placeholder="•••• •••• •••• ••••"
-                 data-openpay-card="card_number" />
-            </div> : null }
+            { openpaySelectedCard == 'new' ?
+                /* OPENPAY HOLDER NAME */
+                <HolderNameComponent
+                    openpayHolderName={openpayHolderName}
+                    setOpenpayHolderName = {setOpenpayHolderName}/>
+            : null }
 
-            { openpaySelectedCard == 'new' ? /* OPENPAY EXPIRY DATE */
-            <div class="wc-block-components-text-input is-active" style={{flex: '1 0 calc(50% - 12px)'}}>
-                <label for="openpay-card-expiry">Expira (MM/AA) <span class="required">*</span></label>
-                <input 
-                    id="openpay-card-expiry"
-                    name="openpayCardExpiry"
-                    class="input-text wc-credit-card-form-card-expiry"
-                    value={openpayCardExpiry} 
-                    onChange={e => setOpenpayCardExpiry(e.target.value)}
-                    type="text"
-                    autocomplete="off" 
-                    placeholder="MM / AA" 
-                    maxlength="4" 
-                    data-openpay-card="expiration_year" />
-            </div> : null }
+            { openpaySelectedCard == 'new' ?
+                /* OPENPAY CARD NUMBER */
+                <CardNumberComponent
+                    openpayCardNumber={openpayCardNumber}
+                    setOpenpayCardNumber = {setOpenpayCardNumber}/>
+            : null }
+
+            { openpaySelectedCard == 'new' ?
+                /* OPENPAY EXPIRY DATE */
+                <CardExpiryComponent
+                    openpayCardExpiry={openpayCardExpiry}
+                    setOpenpayCardExpiry = {setOpenpayCardExpiry}/>
+            : null }
 
             { openpaySelectedCard != 'new' && settings.saveCardMode == 2  && settings.country == 'PE' ? null :
-            <div class="wc-block-components-text-input is-active" style={{flex: '1 0 calc(50% - 12px)'}}>
-                <label for="openpay-card-cvc">CVV <span class="required">*</span></label>
-                <input 
-                    id="openpay-card-cvc"
-                    name="openpayCardCvc" 
-                    class="input-text wc-credit-card-form-card-cvc openpay-card-input-cvc" 
-                    value={openpayCardCvc} 
-                    onChange={e => setOpenpayCardCvc(e.target.value)}
-                    type="password" 
-                    autocomplete="off" 
-                    placeholder="CVC"
-                    maxlength="4" 
-                    data-openpay-card="cvv2" />
-            </div> }
+                /* OPENPAY CARD CVC */
+                <CardCvcComponent
+                    openpayCardCvc={openpayCardCvc}
+                    setOpenpayCardCvc = {setOpenpayCardCvc}/>
+            }
 
-            { settings.userLoggedIn == true && settings.saveCardMode != 0 && openpaySelectedCard == 'new' ? <div class="wc-block-components-checkbox"><label for="openpay-save-card-auth">
-                <input
-                    id="openpay-save-card-auth"
-                    name="openpaySaveCardAuth"
-                    class="wc-block-components-checkbox__input"
-                    value={openpaySaveCardAuth}
-                    onChange={e => {setOpenpaySaveCardAuth(!openpaySaveCardAuth); console.log(openpaySaveCardAuth) } }
-                    type="checkbox"
-                    aria-invalid="false"/>
-                <svg class="wc-block-components-checkbox__mark" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 20"><path d="M9 16.2L4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4L9 16.2z"></path></svg>
-                <span class="wc-block-components-checkbox__label" style={{fontSize: '1.25em'}}>Guardar Tarjeta</span></label>
-            </div> : null }
+            { settings.userLoggedIn == true && settings.saveCardMode != 0 && openpaySelectedCard == 'new' ?
+                /* SAVE CARD AUTHORIZATION */
+                <SaveCardAuthComponent
+                    openpaySaveCardAuth={openpaySaveCardAuth}
+                    setOpenpaySaveCardAuth = {setOpenpaySaveCardAuth}/>
+                 : null }
 
-            <div class="wc-block-components-text-input is-active" style={{ marginBottom: '20px' }} >
-                <label for="save_cc" class="label">
-                    <div class="tooltip">
-                    <input type="checkbox" name="save_cc" id="save_cc" />
-                    <span >Guardar tarjeta</span>
-                    <img alt="" src="<?php echo $this->images_dir ?>tooltip_symbol.svg"></img>
-                    <span class="tooltiptext" >Al guardar los datos de tu tarjeta agilizarás tus pagos futuros y podrás usarla como método de pago guardado.</span>
+            { payments != null && (cardType == 'credit' || cardType == 'CREDIT')  ?
+                <div class="wc-blocks-components-select is-active" style={{flex: '0 0 100%'}}>
+                    <div class="wc-blocks-components-select__container">
+                        <label class="wc-blocks-components-select__label" for="installments">Meses sin intereses</label>
+                        <select class="wc-blocks-components-select__select"
+                                name="installments"
+                                id="installments"
+                                placeholder="Pago de contado"
+                                value={installments}
+                                onChange={(e) => setInstallments(e.target.value)}
+                        >
+                            <option value="0" selected="selected"> Pago de contado </option>
+                            {
+                                payments.map( (installment, index ) => {
+                                    return (<option key={index} value={installment}> {installment} Meses </option>)
+                                })
+                            }
+                        </select>
                     </div>
-                </label>
-            </div>
-            { payments.length > 0 && (cardType == 'credit' || cardType == 'CREDIT')  ?
-            <div class="wc-blocks-components-select is-active" style={{flex: '0 0 100%'}}>
-                <div class="wc-blocks-components-select__container">
-                    <label class="wc-blocks-components-select__label" for="installments">{settings.country == 'MX' ? 'Meses sin intereses' : 'Cuotas'}</label>
-                    <select class="wc-blocks-components-select__select"
-                        name="installments"
-                        id="installments"
-                        placeholder="Pago de contado"
-                        value={installments}
-                        onChange={(e) => setInstallments(e.target.value)}
-                    >
-                        <option value="0" selected="selected"> Pago de contado </option>
-                        {
-                            payments.map( (installment, index ) => {
-                                return (<option key={index} value={installment}> {installment} {settings.country == 'MX' ? 'Meses' : 'Cuotas'} </option>)
-                            })
-                        }
-                    </select>
-                </div>
-            </div> : null}
+                </div> : null}
+
         </div>
     );
 };
