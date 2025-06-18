@@ -388,5 +388,8 @@ if(!class_exists('WC_Openpay_Payment_Settings_Validation')) {
          $settingsValidation->validateOpenpayCurrencies();
      }
 
+     public function getOpenpayInstance() {
+        return $this->openpay;
+    }
  }
 
