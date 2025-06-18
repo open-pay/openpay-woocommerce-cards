@@ -36,6 +36,7 @@ add_action( 'woocommerce_blocks_loaded', 'openpay_blocks_support' );
 add_action( 'before_woocommerce_init', 'openpay_checkout_blocks_compatibility' );
 
 add_action('admin_enqueue_scripts', 'openpay_cards_admin_enqueue');
+add_action('woocommerce_order_refunded', 'openpay_woocommerce_order_refunded', 10, 2);
 
 add_filter( 'plugin_action_links_' . plugin_basename(__FILE__), 'openpay_settings_link' );
 
@@ -55,6 +56,9 @@ function openpay_init_gateway() {
     if (class_exists('WC_Payment_Gateway')) {
         require_once('class-wc-openpay-gateway.php');
     }
+	if(!class_exists('WC_Openpay_Refund_Service')) {
+    	require_once(dirname(__FILE__) . "/services/class-wc-openpay-refund-service.php");
+	}
 }
 
 function openpay_cards_admin_enqueue($hook) {
@@ -82,4 +86,11 @@ function openpay_checkout_blocks_compatibility() {
 			);
     }
 		
+}
+
+function openpay_woocommerce_order_refunded($order_id, $refund_id) {
+		$openpay_gateway = new WC_Openpay_Gateway();
+		$openpayInstance = $openpay_gateway->getOpenpayInstance();
+        $refund_service = new WC_Openpay_Refund_Service($openpay_gateway->settings['sandbox'], $openpay_gateway->settings['country'], $openpayInstance);
+		$refund_service->refundOrder($order_id, $refund_id);
 }

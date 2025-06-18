@@ -30,8 +30,12 @@ class WC_Openpay_Charge_Service
         $charge_request = $this->collectChargeData($payment_settings);
 
         $charge = $this->create($payment_settings['openpay_customer'], $charge_request);
-        $this->logger->info('processOpenpayCharge {Charge.id} - ' . $charge->id);
-        $this->logger->info('processOpenpayCharge {Charge.description} - ' . $charge->description);
+        if($charge != null ) {
+            $this->order->update_meta_data('_transaction_id', $charge->id);
+            $this->logger->info('processOpenpayCharge {Charge.id} - ' . $charge->id);
+            $this->logger->info('processOpenpayCharge {Charge.description} - ' . $charge->description);
+        }
+        $this->order->save();
     }
 
     public function create($openpay_customer, $charge_request)
@@ -44,6 +48,8 @@ class WC_Openpay_Charge_Service
             } else {
                 $charge = $this->openpay->charges->create($charge_request);
             }
+
+            return $charge;
         } catch (Exception $e) {
             $this->logger->error('[ERROR - wc-openpay-charge-service.create] Order => ' . $this->order->get_id());
             // $this->logger->error('[ERROR - wc-openpay-charge-service.create] Error => '. json_encode($e)); is not working.
