@@ -1,5 +1,5 @@
 <?php
-if(!class_exists('Utils')) {
+if(!class_exists('Openpay_Utils')) {
     require_once(dirname(__FILE__) . "/includes/class-wc-openpay-utils.php");
 }
 
@@ -77,7 +77,7 @@ if(!class_exists('WC_Openpay_Payment_Settings_Validation')) {
 
         $save_cc = isset($this->settings['save_cc']) ? (strcmp($this->settings['save_cc'], '0') != 0) : false;
         $this->save_cc = $save_cc;
-        $this->save_cc_option = $this->settings['save_cc'];
+        $this->save_cc_option = isset( $this->settings['save_cc'] );
         $this->can_save_cc = $this->save_cc && is_user_logged_in();
         $this->capture = $this->get_option('capture');
 
@@ -258,13 +258,13 @@ if(!class_exists('WC_Openpay_Payment_Settings_Validation')) {
         wp_enqueue_script(   'openpay'   , plugins_url('assets/js/openpay.js', __FILE__), array( 'jquery' ), '', true);  
         */
 
-        $scripts = Utils::getUrlScripts($this->country);
+        $scripts = Openpay_Utils::getUrlScripts($this->country);
         $openpayFraud = 'openpay_fraud_js';
 
         wp_enqueue_script($scripts['openpay_js']['tag'], plugins_url($scripts['openpay_js']['script'], __FILE__), '', '', true);
         wp_enqueue_script($openpayFraud, $scripts[$openpayFraud], '', '', true);      
         wp_enqueue_script('payment', plugins_url('assets/js/jquery.payment.js', __FILE__), array( 'jquery' ), '', true);
-        wp_enqueue_script('openpay', plugins_url('assets/js/openpay.js', __FILE__), array( 'jquery' ), '', true); 
+        wp_enqueue_script('wc_openpay', plugins_url('assets/js/openpay.js', __FILE__), array( 'jquery' ), '', true);
 
         $openpay_params = array(
             'merchant_id' => $this->merchant_id,
@@ -274,7 +274,7 @@ if(!class_exists('WC_Openpay_Payment_Settings_Validation')) {
             'bootstrap_js' => plugins_url('assets/js/bootstrap.js', __FILE__),
         );
         
-        wp_localize_script('openpay', 'openpay_params', $openpay_params);
+        wp_localize_script('wc_openpay', 'openpay_params', $openpay_params);
     }
 
     /*
@@ -384,7 +384,7 @@ if(!class_exists('WC_Openpay_Payment_Settings_Validation')) {
             $path       = sprintf('/%s/customers/%s/cards/%s', $this->merchant_id, $openpay_customer->id, $openpay_token);
             $params     = array('cvv2' => $cvv);
             $auth       = $this->private_key;
-            $cardInfo = Utils::requestOpenpay($path, $this->country, $this->sandbox,'PUT',$params,$auth);
+            $cardInfo = Openpay_Utils::requestOpenpay($path, $this->country, $this->sandbox,'PUT',$params,$auth);
             if (isset($cardInfo->error_code)){
                 $this->logger->error('CVV update has failed.');
                 throw new Exception("Error en la transacción: No se pudo completar tu pago.");

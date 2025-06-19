@@ -72,10 +72,10 @@ const Form = ( props ) => {
         console.log('{ REACT } - ' + JSON.stringify(data));
 
         const result = await tokenRequestWrapper(data);
-        console.log('Prueba 2');
+        console.log("Token Request Result: ");
         console.log(result);
+        console.log(data);
         if(result.data.error_code){
-            console.log('Prueba 2');
             return {
                 errorCode: result.data.error_code,
             };
@@ -90,13 +90,22 @@ const Form = ( props ) => {
     }
 
     const tokenRequestWrapper = (data) => {
+        OpenPay.setId(openpay_params.merchant_id);
+        OpenPay.setApiKey(openpay_params.public_key);
+        OpenPay.setSandboxMode(openpay_params.sandbox);
+        var deviceSessionId = OpenPay.deviceData.setup();
+
+        console.log("openpay_params: " + openpay_params);
+        console.log("Merchant_ID: " + openpay_params.merchant_id);
+        console.log("PublicKey: " + openpay_params.public_key);
+        console.log("sandbox: " + openpay_params.sandbox);
+        console.log("deviceSessionId: " + deviceSessionId);
 
         return new Promise((resolve, reject) => {
             OpenPay.token.create(data, (successResponse) => {
                 resolve(successResponse);
             } , (errorResponse) => {
                 resolve(errorResponse);
-                console.log('Prueba 1');
             });
         });
 
@@ -121,23 +130,19 @@ const Form = ( props ) => {
 
             if(openpayHolderName.length){
 
-               const errorCode = await tokenRequest();
-               if(errorCode){
-                    const openpayServiceErrorMessage = OpenpayServiceValidation(errorCode);
-                    if(openpayServiceErrorMessage){
-                        return {
-                            type: emitResponse.responseTypes.ERROR,
-                            message: openpayServiceErrorMessage,
-                        };
-                    }
+               const result = await tokenRequest();
+               if(result !== undefined){
+                   if(result.errorCode !== undefined) {
+                       const openpayServiceErrorMessage = OpenpayServiceValidation(result.errorCode);
+                       if (openpayServiceErrorMessage) {
+                           return {
+                               type: emitResponse.responseTypes.ERROR,
+                               message: openpayServiceErrorMessage,
+                           };
+                       }
+                   }
                }
 
-                if(errorMessage){
-                    return {
-                        type: emitResponse.responseTypes.ERROR,
-                        message: errorMessage,
-                    };
-                }
                 console.log('{ REACT } - after token request');
 
                 if ( openpayToken.length) {
