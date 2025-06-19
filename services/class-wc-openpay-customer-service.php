@@ -1,5 +1,4 @@
 <?php
-
 Class WC_Openpay_Customer_Service{
     private $logger;
     private $openpay;
@@ -17,7 +16,7 @@ Class WC_Openpay_Customer_Service{
     public function retrieveCustomer($order){
         $customer_id = $this->getCustomerId();
         try { 
-            if (Utils::isNullOrEmptyString($customer_id)) {
+            if (Openpay_Utils::isNullOrEmptyString($customer_id)) {
                 $this->logger->info('(retrieveCustomer) customer_id not exists - ' . $customer_id);
                 if (is_user_logged_in()) {
                     return $this->create($order);

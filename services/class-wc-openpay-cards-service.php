@@ -35,7 +35,7 @@ Class WC_Openpay_Cards_Service extends WC_Openpay_Gateway{
         $this->logger->info('WC_Openpay_Cards_Service.getCreditCardList - customer_id ' . $customer_id); 
 
 
-        if (Utils::isNullOrEmptyString($customer_id)) {
+        if (Openpay_Utils::isNullOrEmptyString($customer_id)) {
             return array(array('value' => 'new', 'name' => 'Nueva tarjeta'));
         } 
         
