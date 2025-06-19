@@ -6,7 +6,7 @@ export const HolderNameValidation = (openpayHolderName) => {
     }
 
     // Validación de texto sin números
-    if ( /\d/.test(openpayHolderName.trim()) ) {
-        return  'El campo de tarjetahabiente no debe contener números';
+    if (! /^[a-z ]+$/i.test(openpayHolderName.trim()) ) {
+        return  'El campo de tarjetahabiente solo debe contener letras o espacios';
     }
 }

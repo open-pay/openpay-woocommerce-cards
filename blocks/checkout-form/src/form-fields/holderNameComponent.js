@@ -3,9 +3,8 @@ const holderNameComponent = ( props ) => {
 
 const holderNameInputValidation = (e) => {
     const value = e.target.value;
-    if(/^[A-Z]+$/i.test(value) || value === "" ){
+    if( /^[a-z ]+$/i.test(value) || value === "" ){
         props.setOpenpayHolderName(value);
-        console.log(props.openpayHolderName);
     }
 }
 

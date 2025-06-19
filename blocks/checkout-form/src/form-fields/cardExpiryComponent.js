@@ -14,7 +14,7 @@ const cardExpiryComponent = (props ) => {
             <input
                 id="openpay-card-expiry"
                 name="openpayCardExpiry"
-                class="input-text wc-credit-card-form-card-expiry"
+                class="input-text wc-credit-card-block-form-card-expiry"
                 value={props.openpayCardExpiry}
                 onChange={cardExpiryInputValidation}
                 type="text"
