@@ -70,6 +70,9 @@ function openpay_init_gateway() {
 	if(!class_exists('WC_Openpay_Refund_Service')) {
     	require_once(dirname(__FILE__) . "/services/class-wc-openpay-refund-service.php");
 	}
+	if(!class_exists('WC_Openpay_Capture_Service')) {
+    	require_once(dirname(__FILE__) . "/services/class-wc-openpay-capture-service.php");
+	}
 }
 
 function openpay_cards_admin_enqueue($hook) {

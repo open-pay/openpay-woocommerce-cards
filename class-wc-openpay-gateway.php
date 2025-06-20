@@ -37,6 +37,7 @@ if(!class_exists('WC_Openpay_Payment_Settings_Validation')) {
     protected $installments_is_active;
     protected $minimum_amount_interest_free;
 
+    protected $capture = true;
     protected $order;
     protected $logger;
     protected $openpay;
@@ -80,6 +81,12 @@ if(!class_exists('WC_Openpay_Payment_Settings_Validation')) {
         $this->save_cc_option = isset( $this->settings['save_cc'] );
         $this->can_save_cc = $this->save_cc && is_user_logged_in();
         $this->capture = $this->get_option('capture');
+
+        if ($this->capture === 'false') {
+            $this->capture = false;
+        } else {
+            $this->capture = true;
+        }
 
         // This action hook saves the settings
         add_action( 'woocommerce_update_options_payment_gateways_' . $this->id, array( $this, 'process_admin_options' ) );
@@ -411,6 +418,11 @@ if(!class_exists('WC_Openpay_Payment_Settings_Validation')) {
 
      public function getOpenpayInstance() {
         return $this->openpay;
+    }
+
+    public function action_woocommerce_checkout_create_order($order, $data)
+    {   // Se agrega log para registro de capturaAdd commentMore actions
+        $this->logger->debug('action_woocommerce_checkout_create_order => ' . json_encode(array('$this->capture' => $this->capture)));
     }
  }
 

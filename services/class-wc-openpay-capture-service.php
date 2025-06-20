@@ -25,7 +25,7 @@ class WC_Openpay_Capture_Service
             $logger->info('$old_status: ' . $old_status);
             $logger->info('$new_status: ' . $new_status);
 
-            if ($order->get_payment_method() != 'wc-openpay-gateway') {
+            if ($order->get_payment_method() != 'wc_openpay_gateway') {
                 $logger->info('get_payment_method: ' . $order->get_payment_method());
                 return;
             }
@@ -69,9 +69,8 @@ class WC_Openpay_Capture_Service
 
     function addPartialCaptureToggle($order)
     {
-        $this->logger->info("Entra al handler");
         if ($this->is_preauthorized_order($order)) {
-
+            $this->logger->info("Entra al handler capture toggle is preauthorized order");
             $auth_total = $this->get_order_auth_amount($order);
             $auth_remaining = $this->get_order_auth_remaining($order);
             $already_captured = $this->get_order_captured_total($order);

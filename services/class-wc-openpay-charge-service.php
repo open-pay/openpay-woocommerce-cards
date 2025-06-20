@@ -54,14 +54,13 @@ class WC_Openpay_Charge_Service
                 $this->logger->info('Update metadata customer Live ' . $charge->customer_id);
             }
 
-            if($charge_request['capture'] === 'false' && $charge->status == 'in_progress'){
-                $this->logger->info('capture => ' . $this->capture);
+            if($charge_request['capture'] === false && $charge->status == 'in_progress'){
                 $captureString = ($this->capture) ? 'true' : 'false';
                 $this->logger->info('Order:' . $this->order->get_id() . ' Set as preauthorized');
                 $this->order->update_meta_data('_openpay_capture', $captureString);
             }
+            $this->order->save();
         }
-        $this->order->save();
     }
 
     public function create($openpay_customer, $charge_request)
@@ -141,12 +140,4 @@ class WC_Openpay_Charge_Service
     }
 
 }
-
-
-
-
-
-
-
-
 
