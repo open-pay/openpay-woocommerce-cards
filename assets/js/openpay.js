@@ -1,4 +1,4 @@
-/*
+
 OpenPay.setId(openpay_params.merchant_id);
 OpenPay.setApiKey(openpay_params.public_key);
 OpenPay.setSandboxMode(openpay_params.sandbox);
@@ -9,7 +9,7 @@ console.log("Merchant_ID: " + openpay_params.merchant_id);
 console.log("PublicKey: " + openpay_params.public_key);
 console.log("sandbox: " + openpay_params.sandbox);
 console.log("deviceSessionId: " + deviceSessionId);
- */
+
 
 /*
 jQuery(document).ready(function () {

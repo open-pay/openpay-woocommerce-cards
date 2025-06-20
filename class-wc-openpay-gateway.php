@@ -37,6 +37,7 @@ if(!class_exists('WC_Openpay_Payment_Settings_Validation')) {
     protected $installments_is_active;
     protected $minimum_amount_interest_free;
 
+    protected $capture = true;
     protected $order;
     protected $logger;
     protected $openpay;
@@ -79,6 +80,13 @@ if(!class_exists('WC_Openpay_Payment_Settings_Validation')) {
         $this->save_cc = $save_cc;
         $this->save_cc_option = isset( $this->settings['save_cc'] );
         $this->can_save_cc = $this->save_cc && is_user_logged_in();
+        $this->capture = $this->get_option('capture');
+
+        if ($this->capture === 'false') {
+            $this->capture = false;
+        } else {
+            $this->capture = true;
+        }
 
         // This action hook saves the settings
         add_action( 'woocommerce_update_options_payment_gateways_' . $this->id, array( $this, 'process_admin_options' ) );
@@ -159,6 +167,18 @@ if(!class_exists('WC_Openpay_Payment_Settings_Validation')) {
                     '0' => __('No guardar', 'woocommerce'),
                     '1' => __('Guardar y solicitar CVV para futuras compras', 'woocommerce'),
                     '2' => __('Guardar y no solicitar CVV para futuras compras', 'woocommerce')
+                ),
+            ),
+            'capture' => array(
+                'title' => __('Configuración del cargo', 'woocommerce'),
+                'type' => 'select',
+                'class' => 'wc-enhanced-select',
+                'description' => __('Indica si el cargo se hace o no inmediatamente, con la pre-autorización solo se reserva el monto para ser confirmado o cancelado posteriormente. Las pre-autorizaciones no pueden ser utilizadas en combinación con pago con puntos Bancomer.', 'woocommerce'),
+                'default' => 'true',
+                'desc_tip' => true,
+                'options' => array(
+                    'true' => __('Cargo inmediato', 'woocommerce'),
+                    'false' => __('Pre-autorizar únicamente', 'woocommerce')
                 ),
             ),
             // Meses sin intereses solo para MX
@@ -326,23 +346,31 @@ if(!class_exists('WC_Openpay_Payment_Settings_Validation')) {
             'device_session_id' => $device_session_id,
             'openpay_customer' => $openpay_customer,
             'openpay_card_points_confirm' => $openpay_card_points_confirm,
-            'openpay_payment_plan' => $openpay_payment_plan
+            'openpay_payment_plan' => $openpay_payment_plan,
+            'capture' => $this->capture,
+            'sandbox' => $this->sandbox
         );
 
-        $charge_service = new WC_Openpay_Charge_Service($this->openpay,$order,$customer_service);
+        $charge_service = new WC_Openpay_Charge_Service($this->openpay,$order,$customer_service, $this->capture);
         $charge_service->processOpenpayCharge($payment_settings);
 
 
-        // we received the payment
-        $this->logger->info('Completing Payment');
-        $this->order->payment_complete();
-        $this->order->reduce_order_stock();
+        // Add status to capture
+        if ($this->capture != 'true') {
+            $this->order->update_status('on-hold');
+            $this->order->add_order_note(sprintf("%s payment pre-authorized with Transaction Id of '%s'", $this->GATEWAY_NAME, $this->transaction_id));
+        } else {
+            // we received the payment
+            $this->logger->info('Completing Payment');
+            $this->order->payment_complete();
+            $this->order->reduce_order_stock();
 
-        // some notes to customer (replace true with false to make it private)
-        $this->order->add_order_note( 'Orden Pagada', true );
+            // some notes to customer (replace true with false to make it private)
+            $this->order->add_order_note('Orden Pagada', true);
 
-        // Empty cart
-        WC()->cart->empty_cart();
+            // Empty cart
+            WC()->cart->empty_cart();
+        }
 
         // Redirect to the thank you page
         return array(
@@ -390,6 +418,11 @@ if(!class_exists('WC_Openpay_Payment_Settings_Validation')) {
 
      public function getOpenpayInstance() {
         return $this->openpay;
+    }
+
+    public function action_woocommerce_checkout_create_order($order, $data)
+    {   // Se agrega log para registro de capturaAdd commentMore actions
+        $this->logger->debug('action_woocommerce_checkout_create_order => ' . json_encode(array('$this->capture' => $this->capture)));
     }
  }
 
