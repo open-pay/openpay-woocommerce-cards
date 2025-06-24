@@ -10,6 +10,18 @@ jQuery(document).ready(function () {
     });
 
     function showOrHideElements (country){
+
+        var chargeMX = jQuery('#woocommerce_wc_openpay_gateway_charge_type').closest('tr');
+        var chargeCOPE = jQuery('#woocommerce_wc_openpay_gateway_charge_type_co_pe').closest('tr');
+        if (country === 'MX'|| country === undefined) {
+            chargeMX.show();
+            chargeCOPE.hide();
+        } else {
+            chargeMX.hide();
+            chargeCOPE.show();
+        }
+
+
         if(country == 'PE' || country == 'CO'){
             if(country == 'PE') {
                 jQuery("#woocommerce_wc_openpay_gateway_save_card_mode option[value='2']").show();
