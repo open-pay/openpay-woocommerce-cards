@@ -84,13 +84,10 @@ if(!class_exists('WC_Openpay_3d_secure')) {
         $this->save_cc = $save_cc;
         $this->save_cc_option = isset( $this->settings['save_cc'] );
         $this->can_save_cc = $this->save_cc && is_user_logged_in();
-        $this->capture = $this->get_option('capture');
 
-        if ($this->capture === 'false') {
-            $this->capture = false;
-        } else {
-            $this->capture = true;
-        }
+        $capture_option = $this->get_option('capture');
+        $capture = isset($capture_option) ? (strcmp($this->get_option('capture'), 'true') == 0) : true;
+        $this->capture = ($this->country == 'MX' || $this->country == 'PE' ) ? $capture : true;
 
         // This action hook saves the settings
         add_action( 'woocommerce_update_options_payment_gateways_' . $this->id, array( $this, 'process_admin_options' ) );
@@ -381,10 +378,10 @@ if(!class_exists('WC_Openpay_3d_secure')) {
             'capture' => $this->capture,
             'sandbox' => $this->sandbox
         );
+
         $charge_service = new WC_Openpay_Charge_Service($this->openpay,$order,$customer_service, $this->capture);
         $charge = $charge_service->processOpenpayCharge($payment_settings);
         if($charge !== false){
-//            $redirect_url = $this->order->get_meta('_openpay_3d_secure_url');
             $redirect_url = $charge->payment_method->url;
             $this->logger->info("3DS_REDIRECT_URL GATEWAY = " . $redirect_url);
             // Si el redirect url no existe el cargo es inmediato
