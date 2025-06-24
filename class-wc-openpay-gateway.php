@@ -80,13 +80,10 @@ if(!class_exists('WC_Openpay_Payment_Settings_Validation')) {
         $this->save_cc = $save_cc;
         $this->save_cc_option = isset( $this->settings['save_cc'] );
         $this->can_save_cc = $this->save_cc && is_user_logged_in();
-        $this->capture = $this->get_option('capture');
-
-        if ($this->capture === 'false') {
-            $this->capture = false;
-        } else {
-            $this->capture = true;
-        }
+        
+        $capture_option = $this->get_option('capture');
+        $capture = isset($capture_option) ? (strcmp($this->get_option('capture'), 'true') == 0) : true;
+        $this->capture = ($this->country == 'MX' || $this->country == 'PE' ) ? $capture : true;
 
         // This action hook saves the settings
         add_action( 'woocommerce_update_options_payment_gateways_' . $this->id, array( $this, 'process_admin_options' ) );
@@ -356,7 +353,7 @@ if(!class_exists('WC_Openpay_Payment_Settings_Validation')) {
 
 
         // Add status to capture
-        if ($this->capture != 'true') {
+        if (!$this->capture) {
             $this->order->update_status('on-hold');
             $this->order->add_order_note(sprintf("%s payment pre-authorized with Transaction Id of '%s'", $this->GATEWAY_NAME, $this->transaction_id));
         } else {
