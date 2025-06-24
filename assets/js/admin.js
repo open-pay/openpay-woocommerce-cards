@@ -33,6 +33,7 @@ jQuery(document).ready(function () {
             }
         } else if (country == 'MX'){
             jQuery("#woocommerce_wc_openpay_gateway_save_card_mode option[value='2']").hide();
+            jQuery("#woocommerce_wc_openpay_gateway_capture").closest("tr").show();
         }
     }
     
