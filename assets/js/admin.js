@@ -10,10 +10,16 @@ jQuery(document).ready(function () {
     });
 
     function showOrHideElements (country){
-        if(country == 'PE'){
-            jQuery("#woocommerce_wc_openpay_gateway_save_card_mode option[value='2']").show();
-        }
-        if(country != 'PE'){
+        if(country == 'PE' || country == 'CO'){
+            if(country == 'PE') {
+                jQuery("#woocommerce_wc_openpay_gateway_save_card_mode option[value='2']").show();
+                jQuery("#woocommerce_wc_openpay_gateway_capture").closest("tr").show();
+            }
+            if(country == 'CO') {
+                jQuery("#woocommerce_wc_openpay_gateway_save_card_mode option[value='2']").hide();
+                jQuery("#woocommerce_wc_openpay_gateway_capture").closest("tr").hide();
+            }
+        } else if (country == 'MX'){
             jQuery("#woocommerce_wc_openpay_gateway_save_card_mode option[value='2']").hide();
         }
     }
