@@ -101,8 +101,8 @@ const HolderNameValidation = openpayHolderName => {
   }
 
   // Validación de texto sin números
-  if (/\d/.test(openpayHolderName.trim())) {
-    return 'El campo de tarjetahabiente no debe contener números';
+  if (!/^[a-z ]+$/i.test(openpayHolderName.trim())) {
+    return 'El campo de tarjetahabiente solo debe contener letras o espacios';
   }
 };
 
@@ -277,7 +277,7 @@ const cardExpiryComponent = props => {
     }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)("input", {
       id: "openpay-card-expiry",
       name: "openpayCardExpiry",
-      class: "input-text wc-credit-card-form-card-expiry",
+      class: "input-text wc-credit-card-block-form-card-expiry",
       value: props.openpayCardExpiry,
       onChange: cardExpiryInputValidation,
       type: "text",
@@ -310,7 +310,6 @@ const holderNameComponent = props => {
     const value = e.target.value;
     if (/^\d{0,16}$/.test(value)) {
       props.setOpenpayCardNumber(value);
-      console.log(props.openpayCardNumber.length);
     }
   };
   return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsxs)("div", {
@@ -319,7 +318,7 @@ const holderNameComponent = props => {
       flex: '0 0 100%'
     },
     children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsxs)("label", {
-      htmlFor: "openpay-card-number",
+      for: "test-openpay-card-number",
       children: ["N\xFAmero de tarjeta ", /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)("span", {
         className: "required",
         children: "*"
@@ -327,7 +326,7 @@ const holderNameComponent = props => {
     }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)("input", {
       id: "openpay-card-number",
       name: "openpayCardNumber",
-      className: "wc-credit-card-form-card-number",
+      className: "wc-credit-card-block-form-card-number",
       value: props.openpayCardNumber,
       onChange: cardNumberInputValidation,
       type: "text",
@@ -358,9 +357,8 @@ __webpack_require__.r(__webpack_exports__);
 const holderNameComponent = props => {
   const holderNameInputValidation = e => {
     const value = e.target.value;
-    if (/^[A-Z]+$/i.test(value) || value === "") {
+    if (/^[a-z ]+$/i.test(value) || value === "") {
       props.setOpenpayHolderName(value);
-      console.log(props.openpayHolderName);
     }
   };
   return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsxs)("div", {
@@ -537,10 +535,10 @@ const Form = props => {
     };
     console.log('{ REACT } - ' + JSON.stringify(data));
     const result = await tokenRequestWrapper(data);
-    console.log('Prueba 2');
+    console.log("Token Request Result: ");
     console.log(result);
+    console.log(data);
     if (result.data.error_code) {
-      console.log('Prueba 2');
       return {
         errorCode: result.data.error_code
       };
@@ -558,7 +556,6 @@ const Form = props => {
         resolve(successResponse);
       }, errorResponse => {
         resolve(errorResponse);
-        console.log('Prueba 1');
       });
     });
   };
@@ -578,21 +575,17 @@ const Form = props => {
         };
       }
       if (openpayHolderName.length) {
-        const errorCode = await tokenRequest();
-        if (errorCode) {
-          const openpayServiceErrorMessage = (0,_fields_validation_openpayServiceValidation__WEBPACK_IMPORTED_MODULE_8__.OpenpayServiceValidation)(errorCode);
-          if (openpayServiceErrorMessage) {
-            return {
-              type: emitResponse.responseTypes.ERROR,
-              message: openpayServiceErrorMessage
-            };
+        const result = await tokenRequest();
+        if (result !== undefined) {
+          if (result.errorCode !== undefined) {
+            const openpayServiceErrorMessage = (0,_fields_validation_openpayServiceValidation__WEBPACK_IMPORTED_MODULE_8__.OpenpayServiceValidation)(result.errorCode);
+            if (openpayServiceErrorMessage) {
+              return {
+                type: emitResponse.responseTypes.ERROR,
+                message: openpayServiceErrorMessage
+              };
+            }
           }
-        }
-        if (errorMessage) {
-          return {
-            type: emitResponse.responseTypes.ERROR,
-            message: errorMessage
-          };
         }
         console.log('{ REACT } - after token request');
         if (openpayToken.length) {

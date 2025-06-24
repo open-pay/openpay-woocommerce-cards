@@ -1,5 +1,5 @@
 <?php
-if (file_exists(dirname(__FILE__) . '/../lib/openpay/Openpay.php')) {
+if (!class_exists('Openpay\Data\Openpay')) {
     require_once(dirname(__FILE__) . '/../lib/openpay/Openpay.php');
 }
 

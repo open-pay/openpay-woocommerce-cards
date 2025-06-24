@@ -1,7 +1,7 @@
 <?php
 
 add_action('woocommerce_api_openpay_confirm', 'openpay_woocommerce_confirm', 10, 0);
-add_action('template_redirect', 'wc_custom_redirect_after_purchase');
+add_action('template_redirect', 'wc_custom_redirect_after_purchase',0);
 class WC_Openpay_3d_secure extends WC_Openpay_Gateway
 {
 
@@ -71,7 +71,6 @@ function wc_custom_redirect_after_purchase() {
         $logger->debug('[WC_Openpay_3d_secure.wc_custom_redirect_after_purchase] => order_status : ' .  $order->get_status());
 
         if ($redirect_url && $order->get_status() != 'processing') {
-//        if ($redirect_url && $order->get_status() == 'processing') {
             $order->delete_meta_data('_openpay_3d_secure_url');
             $order->save();
             $logger->debug('[WC_Openpay_3d_secure.wc_custom_redirect_after_purchase] => order not processed redirect_url : ' . $redirect_url);

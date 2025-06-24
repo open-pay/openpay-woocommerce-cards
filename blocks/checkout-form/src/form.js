@@ -72,10 +72,10 @@ const Form = ( props ) => {
         console.log('{ REACT } - ' + JSON.stringify(data));
 
         const result = await tokenRequestWrapper(data);
-        console.log('Prueba 2');
+        console.log("Token Request Result: ");
         console.log(result);
+        console.log(data);
         if(result.data.error_code){
-            console.log('Prueba 2');
             return {
                 errorCode: result.data.error_code,
             };
@@ -96,7 +96,6 @@ const Form = ( props ) => {
                 resolve(successResponse);
             } , (errorResponse) => {
                 resolve(errorResponse);
-                console.log('Prueba 1');
             });
         });
 
@@ -121,23 +120,19 @@ const Form = ( props ) => {
 
             if(openpayHolderName.length){
 
-               const errorCode = await tokenRequest();
-               if(errorCode){
-                    const openpayServiceErrorMessage = OpenpayServiceValidation(errorCode);
-                    if(openpayServiceErrorMessage){
-                        return {
-                            type: emitResponse.responseTypes.ERROR,
-                            message: openpayServiceErrorMessage,
-                        };
-                    }
+               const result = await tokenRequest();
+               if(result !== undefined){
+                   if(result.errorCode !== undefined) {
+                       const openpayServiceErrorMessage = OpenpayServiceValidation(result.errorCode);
+                       if (openpayServiceErrorMessage) {
+                           return {
+                               type: emitResponse.responseTypes.ERROR,
+                               message: openpayServiceErrorMessage,
+                           };
+                       }
+                   }
                }
 
-                if(errorMessage){
-                    return {
-                        type: emitResponse.responseTypes.ERROR,
-                        message: errorMessage,
-                    };
-                }
                 console.log('{ REACT } - after token request');
 
                 if ( openpayToken.length) {

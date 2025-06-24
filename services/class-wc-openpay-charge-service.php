@@ -1,4 +1,12 @@
 <?php
+// Ensure WordPress functions are available
+if (!defined('ABSPATH')) {
+    exit; // Exit if accessed directly
+}
+
+require_once ABSPATH . 'wp-load.php';
+require_once ABSPATH . 'wp-includes/pluggable.php';
+require_once ABSPATH . 'wp-includes/user.php'; // Ensure user-related functions are loaded
 
 if(!class_exists('WC_Openpay_Card_Points')) {
     require_once(dirname(__FILE__) . "/payment-settings/class-wc-openpay-card-points.php");
@@ -12,7 +20,9 @@ class WC_Openpay_Charge_Service
     private $card_points;
     private $installments;
 
-    public function __construct($openpay, $order, $customer_service)
+    private $capture;
+
+    public function __construct($openpay, $order, $customer_service, $capture)
     {
         $this->logger = wc_get_logger();
         $this->order = $order;
@@ -20,6 +30,7 @@ class WC_Openpay_Charge_Service
         $this->openpay = $openpay;
         $this->card_points = new WC_Openpay_Card_Points();
         $this->installments = new WC_Openpay_Installments();
+        $this->capture = $capture;
     }
 
     public function processOpenpayCharge($payment_settings)
@@ -32,6 +43,26 @@ class WC_Openpay_Charge_Service
         $charge = $this->create($payment_settings['openpay_customer'], $charge_request,$payment_settings['openpay_charge_type']);
         $this->logger->info('processOpenpayCharge {Charge.id} - ' . $charge->id);
         $this->logger->info('processOpenpayCharge {Charge.description} - ' . $charge->description);
+        if($charge != false ) {
+            $this->order->update_meta_data('_transaction_id', $charge->id);
+            $this->logger->info('processOpenpayCharge {Charge.id} - ' . $charge->id);
+            $this->logger->info('processOpenpayCharge {Charge.description} - ' . $charge->description);
+
+            if($payment_settings['sandbox'] && is_user_logged_in()){
+                $this->order->update_meta_data('_openpay_customer_sandbox_id',$charge->customer_id);
+                $this->logger->info('Update metadata customer Sandbox ' . $charge->customer_id);
+            } else if (!$payment_settings['sandbox'] && is_user_logged_in()){
+                $this->order->update_meta_data('_openpay_customer_id',$charge->customer_id);
+                $this->logger->info('Update metadata customer Live ' . $charge->customer_id);
+            }
+
+            if($charge_request['capture'] === false && $charge->status == 'in_progress'){
+                $captureString = ($this->capture) ? 'true' : 'false';
+                $this->logger->info('Order:' . $this->order->get_id() . ' Set as preauthorized');
+                $this->order->update_meta_data('_openpay_capture', $captureString);
+            }
+            $this->order->save();
+        }
 
         return $charge;
     }
@@ -48,15 +79,18 @@ class WC_Openpay_Charge_Service
                 $charge = $this->openpay->charges->create($charge_request);
                 $this->logger->info('[wc-openpay-charge-service.create] => charge result=> ' . $charge->id);
             }
-            if($charge !=false){
+            if($charge !==false){
                 if ($charge->payment_method && $charge->payment_method->type == 'redirect') {
                     $this->logger->info('[wc-openpay-charge-service.create] => UPDATE METADATA payment_method->url)');
                     $this->order->update_meta_data('_openpay_3d_secure_url', $charge->payment_method->url);
+                    $this->order->set_status('on-hold');
                 }else{
                     $this->order->delete_meta_data('_openpay_3d_secure_url');
                 }
                 $this->order->save();
             }
+
+            return $charge;
         } catch (Exception $e) {
             $this->logger->error('[ERROR - wc-openpay-charge-service.create] Order => ' . $this->order->get_id());
             $this->logger->error('[ERROR - wc-openpay-charge-service.create] Error => '. $e->getMessage());
@@ -118,9 +152,8 @@ class WC_Openpay_Charge_Service
             "device_session_id" => $payment_settings['device_session_id'],
             "description" => sprintf("Items: %s", $this->getProductsDetail()),
             "order_id" => $this->order->get_id(),
-            "capture" => true,
+            "capture" => $payment_settings['capture'],
             "origin_channel" => "PLUGIN_WOOCOMMERCE",
-
         );
 
         $this->logger->info("Charge type: ".$payment_settings['openpay_charge_type']);
