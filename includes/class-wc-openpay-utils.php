@@ -1,6 +1,6 @@
 <?php
 
-class Utils {
+class Openpay_Utils {
 
 
     public static function getUrlScripts($country){

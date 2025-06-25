@@ -22,6 +22,9 @@
  * This action hook registers WC_Openpay_Gateway class as a WooCommerce payment gateway
  */
 add_filter( 'woocommerce_payment_gateways', 'openpay_add_gateway_class' );
+
+use Automattic\WooCommerce\Internal\DataStores\Orders\CustomOrdersTableController;
+
 /*
  * WC_Openpay_Gateway Class file is called by openpay_init_gateway function
  */
@@ -36,6 +39,7 @@ add_action( 'woocommerce_blocks_loaded', 'openpay_blocks_support' );
 add_action( 'before_woocommerce_init', 'openpay_checkout_blocks_compatibility' );
 
 add_action('admin_enqueue_scripts', 'openpay_cards_admin_enqueue');
+
 add_action('woocommerce_order_refunded', 'openpay_woocommerce_order_refunded', 10, 2);
 
 add_filter( 'plugin_action_links_' . plugin_basename(__FILE__), 'openpay_settings_link' );
@@ -45,6 +49,12 @@ add_action('wp_ajax_nopriv_get_type_card_openpay', 'get_type_card_openpay');
 
 // Hook para usuarios logueados
 add_action('wp_ajax_get_type_card_openpay', 'get_type_card_openpay');
+
+add_action('woocommerce_order_status_changed','openpay_woocommerce_order_status_change_custom', 10, 3);
+
+add_action('woocommerce_order_item_add_action_buttons','add_partial_capture_toggle', 10, 1 );
+
+add_action('wp_ajax_wc_openpay_admin_order_capture','ajax_capture_handler');
 
 // Agrega un enlace de Ajustes del plugin
 function openpay_settings_link ( $links ) {
@@ -65,10 +75,45 @@ function openpay_init_gateway() {
 	if(!class_exists('WC_Openpay_Refund_Service')) {
     	require_once(dirname(__FILE__) . "/services/class-wc-openpay-refund-service.php");
 	}
+	if(!class_exists('WC_Openpay_Capture_Service')) {
+    	require_once(dirname(__FILE__) . "/services/class-wc-openpay-capture-service.php");
+	}
 }
 
 function openpay_cards_admin_enqueue($hook) {
+	global $post, $post_type;
+    $order_id = ! empty( $post ) ? $post->ID : false;
+
+	$screen_id = wc_get_container()->get( CustomOrdersTableController::class )->custom_orders_table_usage_is_enabled()
+        ? wc_get_page_screen_id( 'shop-order' )
+        : 'shop_order';
+
 	wp_enqueue_script('openpay_cards_admin_form', plugins_url('assets/js/admin.js', __FILE__), array('jquery'), '1.0.2' , true);
+
+	 if ( ($order_id && 'shop_order' === $post_type && 'post.php' === $hook) || ($order_id && $screen_id === 'woocommerce_page_wc-orders') ) {
+        $order = wc_get_order( $order_id );
+
+        wp_enqueue_script(
+            'woo-openpay-admin-order',
+            plugins_url(
+                'assets/js/openpay-admin-order.js',
+                __FILE__
+            ),
+            array( 'jquery' )
+        );
+
+        wp_localize_script(
+            'woo-openpay-admin-order',
+            'wc_openpay_admin_order',
+            array(
+                'ajax_url'      => admin_url( 'admin-ajax.php' ),
+                'capture_nonce' => wp_create_nonce( 'wc_openpay_admin_order_capture-' . $order_id ),
+                'action'        => 'wc_openpay_admin_order_capture',
+                'order_id'      => $order_id,
+            )
+        );
+
+    }
 }
 
 function openpay_blocks_support() {
@@ -101,6 +146,7 @@ function openpay_woocommerce_order_refunded($order_id, $refund_id) {
 		$refund_service->refundOrder($order_id, $refund_id);
 }
 
+
 function get_type_card_openpay() {
 	if(!class_exists('WC_Openpay_Bines_Consult')) {
     	require_once(dirname(__FILE__) . "/includes/class-wc-openpay-bines-consult.php");
@@ -108,4 +154,25 @@ function get_type_card_openpay() {
 
 	$openpayBinesConsult = new WC_Openpay_Bines_Consult();
 	$openpayBinesConsult->getTypeCardOpenpay();
+}
+
+function openpay_woocommerce_order_status_change_custom($order_id, $old_status, $new_status) {
+	$openpay_gateway = new WC_Openpay_Gateway();
+	$openpayInstance = $openpay_gateway->getOpenpayInstance();
+    $capture_service = new WC_Openpay_Capture_Service($openpay_gateway->settings['sandbox'], $openpay_gateway->settings['country'], $openpayInstance);
+	$capture_service->openpayWoocommerceOrderStatusChangeCustom( $order_id, $old_status, $new_status );
+}
+
+function add_partial_capture_toggle( $order ) {
+	$openpay_gateway = new WC_Openpay_Gateway();
+	$openpayInstance = $openpay_gateway->getOpenpayInstance();
+    $capture_service = new WC_Openpay_Capture_Service($openpay_gateway->settings['sandbox'], $openpay_gateway->settings['country'], $openpayInstance);
+	$capture_service->addPartialCaptureToggle( $order );
+}
+
+function ajax_capture_handler() {
+	$openpay_gateway = new WC_Openpay_Gateway();
+	$openpayInstance = $openpay_gateway->getOpenpayInstance();
+    $capture_service = new WC_Openpay_Capture_Service($openpay_gateway->settings['sandbox'], $openpay_gateway->settings['country'], $openpayInstance);
+	$capture_service->ajaxCaptureHandler();
 }

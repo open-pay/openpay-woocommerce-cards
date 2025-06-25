@@ -1,5 +1,5 @@
 <?php
-if(!class_exists('Utils')) {
+if(!class_exists('Openpay_Utils')) {
     require_once(dirname(__FILE__) . "/includes/class-wc-openpay-utils.php");
 }
 
@@ -23,20 +23,24 @@ if(!class_exists('WC_Openpay_Payment_Settings_Validation')) {
     require_once(dirname(__FILE__) . "/services/payment-settings/class-wc-openpay-payment-settings-validation.php");
 }
 
+if(!class_exists('WC_Openpay_3d_secure')) {
+    require_once(dirname(__FILE__) . "/services/payment-settings/class-wc-openpay-3d-secure.php");;
+}
  Class WC_Openpay_Gateway extends WC_Payment_Gateway{
     /**
      * Class constructor
      */
-    protected $sandbox;
+    public $sandbox;
     public $country;
     public $merchant_id;
-    protected $private_key; 
+    public $private_key;
     public $public_key;
     protected $card_points;
     protected $msi;
     protected $installments_is_active;
     protected $minimum_amount_interest_free;
 
+    protected $capture = true;
     protected $order;
     protected $logger;
     protected $openpay;
@@ -71,14 +75,19 @@ if(!class_exists('WC_Openpay_Payment_Settings_Validation')) {
         $this->msi = $this->get_option( 'msi' );
         $this->installments_is_active = 'yes' === $this->get_option( 'installments_is_active' );
         $this->minimum_amount_interest_free = $this->get_option( 'minimum_amount_interest_free' );
+        $this->charge_type =$this->country == 'MX' ? $this->get_option( 'charge_type' ):$this->get_option( 'charge_type_co_pe');
 
         $this->openpay = WC_Openpay_Client::getOpenpayInstance($this->sandbox, $this->merchant_id, $this->private_key, $this->country);
         $this->save_card_mode = $this->get_option( 'save_card_mode' );
 
         $save_cc = isset($this->settings['save_cc']) ? (strcmp($this->settings['save_cc'], '0') != 0) : false;
         $this->save_cc = $save_cc;
-        $this->save_cc_option = $this->settings['save_cc'];
+        $this->save_cc_option = isset( $this->settings['save_cc'] );
         $this->can_save_cc = $this->save_cc && is_user_logged_in();
+
+        $capture_option = $this->get_option('capture');
+        $capture = isset($capture_option) ? (strcmp($this->get_option('capture'), 'true') == 0) : true;
+        $this->capture = ($this->country == 'MX' || $this->country == 'PE' ) ? $capture : true;
 
         // This action hook saves the settings
         add_action( 'woocommerce_update_options_payment_gateways_' . $this->id, array( $this, 'process_admin_options' ) );
@@ -141,6 +150,32 @@ if(!class_exists('WC_Openpay_Payment_Settings_Validation')) {
                 'title'       => 'Llave secreta (Sandbox)',
                 'type'        => 'password',
             ),
+            'charge_type' => array(
+                'title' => __('¿Cómo procesar el cargo?', 'woocommerce'),
+                'type' => 'select',
+                'class' => 'wc-enhanced-select',
+                'description' => __('¿Qué es la autenticación selectiva? Es cuando Openpay detecta cierto riesgo de fraude y envía el cargo a través de 3D Secure.', 'woocommerce'),
+                'default' => 'direct',
+                'desc_tip' => true,
+                'options' => array(
+                    'direct' => __('Directo', 'woocommerce'),
+                    'auth' => __('Autenticación selectiva', 'woocommerce'),
+                    '3d' => __('3D Secure', 'woocommerce'),
+                ),
+            ),
+            'charge_type_co_pe' => array(
+                'title' => __('¿Cómo procesar el cargo?', 'woocommerce'),
+                'type' => 'select',
+                'class' => 'wc-enhanced-select',
+                'description' => __('¿Qué es 3D Secure? Es una forma de pago que autentifica al comprador como legítimo titular de la tarjeta que está utilizando.', 'woocommerce'),
+                'default' => 'direct',
+                'desc_tip' => true,
+                'options' => array(
+                    'direct' => __('Directo', 'woocommerce'),
+                    '3d' => __('3D Secure', 'woocommerce'),
+                ),
+            ),
+
             'card_points' => array(
                 'type' => 'checkbox',
                 'title' => __('Pago con puntos', 'woothemes'),
@@ -159,6 +194,18 @@ if(!class_exists('WC_Openpay_Payment_Settings_Validation')) {
                     '0' => __('No guardar', 'woocommerce'),
                     '1' => __('Guardar y solicitar CVV para futuras compras', 'woocommerce'),
                     '2' => __('Guardar y no solicitar CVV para futuras compras', 'woocommerce')
+                ),
+            ),
+            'capture' => array(
+                'title' => __('Configuración del cargo', 'woocommerce'),
+                'type' => 'select',
+                'class' => 'wc-enhanced-select',
+                'description' => __('Indica si el cargo se hace o no inmediatamente, con la pre-autorización solo se reserva el monto para ser confirmado o cancelado posteriormente. Las pre-autorizaciones no pueden ser utilizadas en combinación con pago con puntos Bancomer.', 'woocommerce'),
+                'default' => 'true',
+                'desc_tip' => true,
+                'options' => array(
+                    'true' => __('Cargo inmediato', 'woocommerce'),
+                    'false' => __('Pre-autorizar únicamente', 'woocommerce')
                 ),
             ),
             // Meses sin intereses solo para MX
@@ -245,13 +292,13 @@ if(!class_exists('WC_Openpay_Payment_Settings_Validation')) {
         wp_enqueue_script(   'openpay'   , plugins_url('assets/js/openpay.js', __FILE__), array( 'jquery' ), '', true);  
         */
 
-        $scripts = Utils::getUrlScripts($this->country);
+        $scripts = Openpay_Utils::getUrlScripts($this->country);
         $openpayFraud = 'openpay_fraud_js';
 
         wp_enqueue_script($scripts['openpay_js']['tag'], plugins_url($scripts['openpay_js']['script'], __FILE__), '', '', true);
         wp_enqueue_script($openpayFraud, $scripts[$openpayFraud], '', '', true);      
         wp_enqueue_script('payment', plugins_url('assets/js/jquery.payment.js', __FILE__), array( 'jquery' ), '', true);
-        wp_enqueue_script('openpay', plugins_url('assets/js/openpay.js', __FILE__), array( 'jquery' ), '', true); 
+        wp_enqueue_script('wc_openpay', plugins_url('assets/js/openpay.js', __FILE__), array( 'jquery' ), '', true);
 
         $openpay_params = array(
             'merchant_id' => $this->merchant_id,
@@ -261,7 +308,7 @@ if(!class_exists('WC_Openpay_Payment_Settings_Validation')) {
             'bootstrap_js' => plugins_url('assets/js/bootstrap.js', __FILE__),
         );
         
-        wp_localize_script('openpay', 'openpay_params', $openpay_params);
+        wp_localize_script('wc_openpay', 'openpay_params', $openpay_params);
     }
 
     /*
@@ -290,8 +337,9 @@ if(!class_exists('WC_Openpay_Payment_Settings_Validation')) {
         $openpay_selected_card = $_POST[ 'openpay_selected_card' ];
         $openpay_card_points_confirm = $_POST[ 'openpay_card_points_confirm' ];
         $openpay_payment_plan = $_POST['openpay_selected_installment'];
-
-
+        $openpay_has_interest_pe = $_POST['openpay_has_interest_pe'];
+        
+        
 
         $this->logger->info('$openpay_tokenized_card ' . json_encode($openpay_tokenized_card)); 
         
@@ -323,20 +371,67 @@ if(!class_exists('WC_Openpay_Payment_Settings_Validation')) {
 
         $payment_settings = Array(
             'openpay_token' => $openpay_token,
-            'device_session_id' => $openpay_tokenized_card,
+            'device_session_id' => $device_session_id,
             'openpay_customer' => $openpay_customer,
             'openpay_card_points_confirm' => $openpay_card_points_confirm,
-            'openpay_payment_plan' => $openpay_payment_plan
+            'openpay_payment_plan' => $openpay_payment_plan,
+            "openpay_charge_type" => $this->charge_type,
+            'capture' => $this->capture,
+            'sandbox' => $this->sandbox,
+            'openpay_has_interest_pe' => $openpay_has_interest_pe
         );
 
-        $charge_service = new WC_Openpay_Charge_Service($this->openpay,$order,$customer_service);
-        $charge_service->processOpenpayCharge($payment_settings);
+        $charge_service = new WC_Openpay_Charge_Service($this->openpay,$order,$customer_service, $this->capture);
+        $charge = $charge_service->processOpenpayCharge($payment_settings);
+        if($charge !== false){
+            $redirect_url = $charge->payment_method->url;
+            $this->logger->info("3DS_REDIRECT_URL GATEWAY = " . $redirect_url);
+            // Si el redirect url no existe el cargo es inmediato
+            if (!$redirect_url && $this->capture) {
+                $this->logger->info("[wc-openpay-gateway] => cargo directo");
+                $this->order->payment_complete();
+                $this->order->add_order_note(sprintf("%s payment completed with Transaction Id of '%s'", $this->GATEWAY_NAME, $this->transaction_id));
+            }
+            // Si el cargo es Frictionless y es inmediato, se marca la orden como completada
+            if (str_contains($redirect_url,'frictionless') && $this->capture) {
+                $this->logger->info("[wc-openpay-gateway] => frictionless");
+                $this->order->payment_complete();
+                $this->order->add_order_note(sprintf("%s payment completed by 3DS frictionless with Transaction Id of '%s'", $this->GATEWAY_NAME, $this->transaction_id));
+                // Si el cargo es Challenge se pone en status on-hold hasta concluir el proceso.
+            }else if ( $redirect_url && !str_contains($redirect_url,'frictionless') && $this->capture) {
+                $this->logger->info("[wc-openpay-gateway] => challenge");;
+                $this->order->update_status('on-hold');
+                $this->order->add_order_note(sprintf("%s payment on hold by 3DS challenge with Transaction Id of '%s'", $this->GATEWAY_NAME, $this->transaction_id));
+            }
+            else if (!$this->capture) {
+                $this->logger->info("[wc-openpay-gateway] => capture");
+                $this->order->update_status('on-hold');
+                $this->order->add_order_note(sprintf("%s payment pre-authorized with Transaction Id of '%s'", $this->GATEWAY_NAME, $this->transaction_id));
+            }
+            $this->logger->info("RETURN URL = " . $this->get_return_url($this->order));
+            return array(
+                'result' => 'success',
+                'redirect' => $this->get_return_url($this->order)
+            );
+        }else {
+            $this->order->add_order_note(sprintf("%s Credit Card Payment Failed with message: '%s'", $this->GATEWAY_NAME, $this->transactionErrorMessage));
+            $this->order->set_status('failed');
+            $this->order->save();
 
+            if (function_exists('wc_add_notice')) {
+                wc_add_notice(__('Error en la transacción: No se pudo completar tu pago.'), 'error');
+            } else {
+                WC()->add_error(__('Error en la transacción: No se pudo completar tu pago.'), 'woothemes');
+            }
+        }
+        $redirect_url = $this->order->get_meta('_openpay_3d_secure_url');
+        $this->logger->info("3DS_REDIRECT_URL gateway = " . $redirect_url);
 
         // we received the payment
         $this->logger->info('Completing Payment');
         $this->order->payment_complete();
         $this->order->reduce_order_stock();
+
 
         // some notes to customer (replace true with false to make it private)
         $this->order->add_order_note( 'Orden Pagada', true );
@@ -363,7 +458,7 @@ if(!class_exists('WC_Openpay_Payment_Settings_Validation')) {
             $path       = sprintf('/%s/customers/%s/cards/%s', $this->merchant_id, $openpay_customer->id, $openpay_token);
             $params     = array('cvv2' => $cvv);
             $auth       = $this->private_key;
-            $cardInfo = Utils::requestOpenpay($path, $this->country, $this->sandbox,'PUT',$params,$auth);
+            $cardInfo = Openpay_Utils::requestOpenpay($path, $this->country, $this->sandbox,'PUT',$params,$auth);
             if (isset($cardInfo->error_code)){
                 $this->logger->error('CVV update has failed.');
                 throw new Exception("Error en la transacción: No se pudo completar tu pago.");
@@ -390,6 +485,11 @@ if(!class_exists('WC_Openpay_Payment_Settings_Validation')) {
 
      public function getOpenpayInstance() {
         return $this->openpay;
+    }
+
+    public function action_woocommerce_checkout_create_order($order, $data)
+    {   // Se agrega log para registro de capturaAdd commentMore actions
+        $this->logger->debug('action_woocommerce_checkout_create_order => ' . json_encode(array('$this->capture' => $this->capture)));
     }
  }
 

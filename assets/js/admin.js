@@ -10,11 +10,30 @@ jQuery(document).ready(function () {
     });
 
     function showOrHideElements (country){
-        if(country == 'PE'){
-            jQuery("#woocommerce_wc_openpay_gateway_save_card_mode option[value='2']").show();
+
+        var chargeMX = jQuery('#woocommerce_wc_openpay_gateway_charge_type').closest('tr');
+        var chargeCOPE = jQuery('#woocommerce_wc_openpay_gateway_charge_type_co_pe').closest('tr');
+        if (country === 'MX'|| country === undefined) {
+            chargeMX.show();
+            chargeCOPE.hide();
+        } else {
+            chargeMX.hide();
+            chargeCOPE.show();
         }
-        if(country != 'PE'){
+
+
+        if(country == 'PE' || country == 'CO'){
+            if(country == 'PE') {
+                jQuery("#woocommerce_wc_openpay_gateway_save_card_mode option[value='2']").show();
+                jQuery("#woocommerce_wc_openpay_gateway_capture").closest("tr").show();
+            }
+            if(country == 'CO') {
+                jQuery("#woocommerce_wc_openpay_gateway_save_card_mode option[value='2']").hide();
+                jQuery("#woocommerce_wc_openpay_gateway_capture").closest("tr").hide();
+            }
+        } else if (country == 'MX'){
             jQuery("#woocommerce_wc_openpay_gateway_save_card_mode option[value='2']").hide();
+            jQuery("#woocommerce_wc_openpay_gateway_capture").closest("tr").show();
         }
     }
     
