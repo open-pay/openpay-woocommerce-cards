@@ -92,7 +92,7 @@ class WC_Openpay_Charge_Service
         );
 
         $this->card_points->dataValidationAssignement($charge_request, $payment_settings['openpay_card_points_confirm']);
-        $this->installments->dataValidationAssignement($charge_request, $payment_settings['openpay_payment_plan']);
+        $this->installments->dataValidationAssignement($charge_request, $payment_settings['openpay_payment_plan'], $payment_settings['openpay_has_interest_pe']);
 
         if (!is_user_logged_in()) {
             $charge_request["customer"] = $this->customer_service->collectCustomerData($this->order);
