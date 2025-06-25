@@ -53,12 +53,9 @@ class WC_Openpay_Refund_Service {
         $this->logger->info('_transaction_id: '.$transaction_id);
 
         try {
-            if ($this->country == 'CO') {
-                $order->add_order_note('Openpay plugin does not support refunds');             
-                return;
+            if ($this->country == 'CO') {             
+                throw new Error("Openpay plugin does not support refunds");
             }
-
-            $this->logger->info('No es CO');
 
             if (!strlen($customer_id)) {
                 $this->logger->info('No existe el customerId');
@@ -79,7 +76,17 @@ class WC_Openpay_Refund_Service {
 
             $order->add_order_note('Payment was also refunded in Openpay');
         } catch(Exception $e) {
-            $this->logger->error($e->getMessage());             
+            $this->logger->error($e->getMessage());
+            $refunds = $order->get_refunds();
+            if(!empty($refunds)) {
+                $last_refund = end($refunds);
+                $refund_id = $last_refund->get_id();
+
+                wp_delete_post($refund_id, true);
+            }
+            if($order->get_status() === 'refunded') {
+                $order->update_status('processing');
+            }
             $order->add_order_note('There was an error refunding charge in Openpay: '.$e->getMessage());
         }
 

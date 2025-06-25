@@ -68,7 +68,8 @@ final class WC_Openpay_Gateway_Blocks_Support extends AbstractPaymentMethodType 
             'installments' => $installments->getInstallments(),
             'saveCardMode' => $this->get_setting( 'save_card_mode' ),
             'savedCardsList' => $cards_service->getCreditCardList(),
-            'userLoggedIn' => is_user_logged_in()
+            'userLoggedIn' => is_user_logged_in(),
+            'ajaxurl' => admin_url('admin-ajax.php'),
 		);
 	}
 

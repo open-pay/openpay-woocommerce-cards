@@ -337,8 +337,9 @@ if(!class_exists('WC_Openpay_3d_secure')) {
         $openpay_selected_card = $_POST[ 'openpay_selected_card' ];
         $openpay_card_points_confirm = $_POST[ 'openpay_card_points_confirm' ];
         $openpay_payment_plan = $_POST['openpay_selected_installment'];
-
-
+        $openpay_has_interest_pe = $_POST['openpay_has_interest_pe'];
+        
+        
 
         $this->logger->info('$openpay_tokenized_card ' . json_encode($openpay_tokenized_card)); 
         
@@ -376,7 +377,8 @@ if(!class_exists('WC_Openpay_3d_secure')) {
             'openpay_payment_plan' => $openpay_payment_plan,
             "openpay_charge_type" => $this->charge_type,
             'capture' => $this->capture,
-            'sandbox' => $this->sandbox
+            'sandbox' => $this->sandbox,
+            'openpay_has_interest_pe' => $openpay_has_interest_pe
         );
 
         $charge_service = new WC_Openpay_Charge_Service($this->openpay,$order,$customer_service, $this->capture);

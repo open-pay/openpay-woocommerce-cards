@@ -44,12 +44,17 @@ add_action('woocommerce_order_refunded', 'openpay_woocommerce_order_refunded', 1
 
 add_filter( 'plugin_action_links_' . plugin_basename(__FILE__), 'openpay_settings_link' );
 
+// Hook para usuarios no logueados
+add_action('wp_ajax_nopriv_get_type_card_openpay', 'get_type_card_openpay');
+
+// Hook para usuarios logueados
+add_action('wp_ajax_get_type_card_openpay', 'get_type_card_openpay');
+
 add_action('woocommerce_order_status_changed','openpay_woocommerce_order_status_change_custom', 10, 3);
 
 add_action('woocommerce_order_item_add_action_buttons','add_partial_capture_toggle', 10, 1 );
 
 add_action('wp_ajax_wc_openpay_admin_order_capture','ajax_capture_handler');
-
 
 // Agrega un enlace de Ajustes del plugin
 function openpay_settings_link ( $links ) {
@@ -139,6 +144,16 @@ function openpay_woocommerce_order_refunded($order_id, $refund_id) {
 		$openpayInstance = $openpay_gateway->getOpenpayInstance();
         $refund_service = new WC_Openpay_Refund_Service($openpay_gateway->settings['sandbox'], $openpay_gateway->settings['country'], $openpayInstance);
 		$refund_service->refundOrder($order_id, $refund_id);
+}
+
+
+function get_type_card_openpay() {
+	if(!class_exists('WC_Openpay_Bines_Consult')) {
+    	require_once(dirname(__FILE__) . "/includes/class-wc-openpay-bines-consult.php");
+	}
+
+	$openpayBinesConsult = new WC_Openpay_Bines_Consult();
+	$openpayBinesConsult->getTypeCardOpenpay();
 }
 
 function openpay_woocommerce_order_status_change_custom($order_id, $old_status, $new_status) {
