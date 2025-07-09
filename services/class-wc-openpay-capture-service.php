@@ -90,7 +90,7 @@ class WC_Openpay_Capture_Service
         $amount = isset($_POST['amount']) ? $_POST['amount'] : 0;
         $charge = null;
 
-        $this->logger->info("AJAX Capture Handler [Order ID: " . $order_id . "] - Amount: [" . $amount. "]");
+        $this->logger->info("AJAX Capture Handler [Order ID: " . $order_id . "] - Amount: [" . $amount . "]");
 
         try {
             check_ajax_referer('wc_openpay_admin_order_capture-' . $order_id, 'capture_nonce');
@@ -103,7 +103,7 @@ class WC_Openpay_Capture_Service
             //$settings = $openpay_cards->init_settings();
             $transaction_id = $order->get_meta('_transaction_id');
 
-            if($this->sandbox === 'yes' && $order->meta_exists('_openpay_customer_sandbox_id') ) {
+            if ($this->sandbox === 'yes' && $order->meta_exists('_openpay_customer_sandbox_id')) {
                 $customer_id = $order->get_meta('_openpay_customer_sandbox_id');
                 $this->logger->info("AJAX Sandbox and logged customer_id: " . $customer_id);
                 $customer = $this->openpayInstance->customers->get($customer_id);
@@ -111,7 +111,7 @@ class WC_Openpay_Capture_Service
                 $charge->capture(array(
                     'amount' => floatval($amount)
                 ));
-            }else if ($this->sandbox !== 'yes' && $order->meta_exists('_openpay_customer_id')) {
+            } else if ($this->sandbox !== 'yes' && $order->meta_exists('_openpay_customer_id')) {
                 $customer_id = $order->get_meta('_openpay_customer_id');
                 $this->logger->info("AJAX Live and logged customer_id: " . $customer_id);
                 $customer = $this->openpayInstance->customers->get($customer_id);
@@ -121,7 +121,7 @@ class WC_Openpay_Capture_Service
                 ));
             } else {
                 $this->logger->info("AJAX Sandbox transaction_id: " . $transaction_id);
-                $charge =  $this->openpayInstance->charges->get($transaction_id);
+                $charge = $this->openpayInstance->charges->get($transaction_id);
                 $charge->capture(array(
                     'amount' => floatval($amount)
                 ));
@@ -149,7 +149,7 @@ class WC_Openpay_Capture_Service
 
     public function is_preauthorized_order($order)
     {
-        $this->logger->info("Verifica si es capture ". $order->get_meta('_openpay_capture'));
+        $this->logger->info("Verifica si es capture " . $order->get_meta('_openpay_capture'));
         return $order->get_meta('_openpay_capture') == 'false';
     }
 
