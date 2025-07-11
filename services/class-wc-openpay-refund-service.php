@@ -40,10 +40,6 @@ class WC_Openpay_Refund_Service {
 
         $transaction_id = $order->get_meta('_transaction_id');
 
-       /* if (!strlen($customer_id)) {
-            $this->logger->info('Entro al if de customerid');
-            return;
-        }*/
 
         $reason = $refund->get_reason() ? $refund->get_reason() : 'Refund ID: '.$refund_id;
         $amount = floatval($refund->get_amount());
@@ -73,6 +69,16 @@ class WC_Openpay_Refund_Service {
                 'amount' => $amount                
             ));
             $this->logger->info('Se hace el fefund');
+            $this->logger->info('Stataus ' . $order->get_status());
+
+            $status = $order->get_status();
+            $capture = $order->get_meta('_openpay_capture');
+
+            if ($capture == 'false' && $status == 'refunded') {
+            $this->logger->info('Es una orden preautorizada');
+            $order->add_order_note("La orden fue cancelada por Openpay");
+            $order->update_status('cancelled');
+        }
 
             $order->add_order_note('Payment was also refunded in Openpay');
         } catch(Exception $e) {
