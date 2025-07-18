@@ -225,7 +225,7 @@ class WC_Openpay_Gateway extends WC_Payment_Gateway
                     'data-placeholder' => __('Opciones', 'woocommerce'),
                 ),
             ),
-            // Cuotas solo para PE
+            // Cuotas solo para PE y CO
             'installments_is_active' => array(
                 'type' => 'checkbox',
                 'title' => __('Cuotas', 'woothemes'),

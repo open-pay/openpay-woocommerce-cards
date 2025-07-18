@@ -1,4 +1,4 @@
-import React, { useState, useEffect} from 'react'
+import React, { useState, useEffect, useRef} from 'react'
 import { decodeEntities } from '@wordpress/html-entities';
 import axios from "axios";
 import {OpenpayFieldsValidation} from "./fields-validation/openpayFieldsValidation";
@@ -33,6 +33,9 @@ const Form = ( props ) => {
     const [activateForm,      setActivateForm] = useState(true);
     const [openpaySaveCardAuth, setOpenpaySaveCardAuth] = useState(false);
     const [openpaySelectedCard, setSelectedCard] = useState('new');
+    const [showInvalidCardAlert, setShowInvalidCardAlert ] = useState(false);
+    const previousFirst8Digits = useRef('');
+    const isCompleteCardNumberField = useRef(false);
 
     var openpayToken = '';
     var openpayTokenizedCard = '';
@@ -173,40 +176,57 @@ const Form = ( props ) => {
             };
         } );
 
-        if(openpayCardNumber.length === 6) {
-            setActivateForm(false);
-            axios.post(
-                settings.ajaxurl,
-                new URLSearchParams({
-                    action: 'get_type_card_openpay',
-                    card_bin: openpayCardNumber
-                }),
-                {
-                    headers: {
-                        'Content-Type': 'application/x-www-form-urlencoded',
-                    }
-                }
-            ).then((response) => {
-                setCardType(response.data.card_type);
-                if(settings.country == 'MX') {
-                    setPayments(settings.installments.payments);
-                    setActivateForm(true);
-                } else if(settings.country == 'PE') {
-                    if(response.data.withInterest) {
-                        setWithInterestPeru(response.data.withInterest);
-                        setHasInterestPe(response.data.withInterest);
-                    }
-                    if(settings.installments.paymentPlan) setPayments(response.data.installments);
-                } else {
-                     if(response.data.card_type == 'CREDIT') setPayments(Array.from({ length: 36 }, (_, i) => i + 1));
-                }
-                setActivateForm(true);
-                console.log(response);
-            }).catch((error) => {
-                console.log(error);
-                setActivateForm(true);
-            });
+
+
+        if(isCompleteCardNumberField.current && openpayCardNumber.length < 15){
+            setShowInvalidCardAlert(true);
+            isCompleteCardNumberField.current = false;
         }
+
+        if(openpayCardNumber.length >= 15) {
+            isCompleteCardNumberField.current = true;
+            setShowInvalidCardAlert(false);
+            const currentFirst8Digits = openpayCardNumber.slice(0, 8);
+
+            if(previousFirst8Digits.current !== currentFirst8Digits) {
+                previousFirst8Digits.current = currentFirst8Digits;
+                console.log("Cambiaron los primeros 8 digitos");
+            
+                setActivateForm(false);
+                axios.post(
+                    settings.ajaxurl,
+                    new URLSearchParams({
+                        action: 'get_type_card_openpay',
+                        card_bin: openpayCardNumber.slice(0, 8)
+                    }),
+                    {
+                        headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded',
+                        }
+                    }
+                ).then((response) => {
+                    setCardType(response.data.card_type);
+                    if(settings.country == 'MX') {
+                        setPayments(settings.installments.payments);
+                        setActivateForm(true);
+                    } else if(settings.country == 'PE') {
+                        if(response.data.withInterest) {
+                            setWithInterestPeru(response.data.withInterest);
+                            setHasInterestPe(response.data.withInterest);
+                        }
+                        if(settings.installments.paymentPlan) setPayments(response.data.installments);
+                    } else {
+                        if(response.data.card_type == 'CREDIT') setPayments(Array.from({ length: 36 }, (_, i) => i + 1));
+                    }
+                    setActivateForm(true);
+                    console.log(response);
+                }).catch((error) => {
+                    console.log(error);
+                    setActivateForm(true);
+                });
+            }
+        }
+
         // Unsubscribes when this component is unmounted.
         return () => {
             unsubscribe();
@@ -259,6 +279,12 @@ const Form = ( props ) => {
                     setOpenpayHolderName = {setOpenpayHolderName}/>
             : null }
 
+            { showInvalidCardAlert ?
+                <div>
+                    <p style={{color: 'red', fontSize: 13, marginBottom: 0}}>Número de tarjeta invalido</p>
+                </div>
+            : null }
+
             { openpaySelectedCard == 'new' ?
                 /* OPENPAY CARD NUMBER */
                 <CardNumberComponent
@@ -287,7 +313,7 @@ const Form = ( props ) => {
                     setOpenpaySaveCardAuth = {setOpenpaySaveCardAuth}/>
                  : null }
 
-            { payments.length > 0 && (cardType == 'credit' || cardType == 'CREDIT') && withInterestPeru == false ?
+            { payments && payments.length > 0 && (cardType == 'credit' || cardType == 'CREDIT') && withInterestPeru == false ?
             <div class="wc-blocks-components-select is-active" style={{flex: '0 0 100%'}}>
                 <div class="wc-blocks-components-select__container">
                     <label class="wc-blocks-components-select__label" for="installments">{settings.country == 'MX' ? 'Meses sin intereses' : 'Cuotas'}</label>
