@@ -23,6 +23,10 @@ jQuery(document).ready(function () {
 
 
         if(country == 'PE' || country == 'CO'){
+            jQuery("#woocommerce_wc_openpay_gateway_card_points").closest("tr").hide();
+            jQuery("#woocommerce_wc_openpay_gateway_msi").closest("tr").hide();
+            jQuery("#woocommerce_wc_openpay_gateway_minimum_amount_interest_free").closest("tr").hide();
+            jQuery("#woocommerce_wc_openpay_gateway_installments_is_active").closest("tr").show();
             if(country == 'PE') {
                 jQuery("#woocommerce_wc_openpay_gateway_save_card_mode option[value='2']").show();
                 jQuery("#woocommerce_wc_openpay_gateway_capture").closest("tr").show();
@@ -33,7 +37,11 @@ jQuery(document).ready(function () {
             }
         } else if (country == 'MX'){
             jQuery("#woocommerce_wc_openpay_gateway_save_card_mode option[value='2']").hide();
+            jQuery("#woocommerce_wc_openpay_gateway_installments_is_active").closest("tr").hide();
             jQuery("#woocommerce_wc_openpay_gateway_capture").closest("tr").show();
+            jQuery("#woocommerce_wc_openpay_gateway_card_points").closest("tr").show();
+            jQuery("#woocommerce_wc_openpay_gateway_msi").closest("tr").show();
+            jQuery("#woocommerce_wc_openpay_gateway_minimum_amount_interest_free").closest("tr").show();
         }
     }
     
