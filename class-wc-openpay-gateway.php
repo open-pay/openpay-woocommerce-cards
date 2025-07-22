@@ -1,31 +1,30 @@
 <?php
-if (!class_exists('Openpay_Utils')) {
-    require_once(dirname(__FILE__) . "/includes/class-wc-openpay-utils.php");
-}
+//namespace OpenpayCards;
 
-if (!class_exists('WC_Openpay_Client')) {
-    require_once(dirname(__FILE__) . "/includes/class-wc-openpay-client.php");
-}
+use OpenpayCards\includes\OpenpayUtils;
+use OpenpayCards\Includes\OpenpayClient;
+use OpenpayCards\Services\OpenpayCustomerService;
+use OpenpayCards\Services\OpenpayChargeService;
+use OpenpayCards\Services\OpenpayCardService;
+use OpenpayCards\Services\PaymentSettings\OpenpayPaymentSettingsValidation;
 
-if (!class_exists('WC_Openpay_Customer_Service')) {
-    require_once(dirname(__FILE__) . "/services/class-wc-openpay-customer-service.php");
-}
+/* AUTOLOADER */
+spl_autoload_register(function ($class_name) {
+    if ( false === strpos( $class_name, 'OpenpayCards' ) ) {
+        return;
+    }
 
-if (!class_exists('WC_Openpay_Charge_Service')) {
-    require_once(dirname(__FILE__) . "/services/class-wc-openpay-charge-service.php");
-}
+    $class_name = str_replace('\\', '/', $class_name) . '.php';
+    $class_name = str_replace('OpenpayCards', '', $class_name);
 
-if (!class_exists('WC_Openpay_Cards_Service')) {
-    require_once(dirname(__FILE__) . "/services/class-wc-openpay-cards-service.php");
-}
+    //echo ($class_name);
 
-if (!class_exists('WC_Openpay_Payment_Settings_Validation')) {
-    require_once(dirname(__FILE__) . "/services/payment-settings/class-wc-openpay-payment-settings-validation.php");
-}
+    if (!class_exists($class_name)) {
 
-if (!class_exists('WC_Openpay_3d_secure')) {
-    require_once(dirname(__FILE__) . "/services/payment-settings/class-wc-openpay-3d-secure.php");
-}
+        require_once(dirname(__FILE__) . $class_name);
+    }
+});
+
 class WC_Openpay_Gateway extends WC_Payment_Gateway
 {
     /**
@@ -59,8 +58,8 @@ class WC_Openpay_Gateway extends WC_Payment_Gateway
         $this->id = 'wc_openpay_gateway'; // payment gateway plugin ID
         $this->icon = 'https://img.openpay.mx/plugins/openpay_logo.svg'; // URL of the icon that will be displayed on checkout page near your gateway name
         $this->has_fields = true; // in case you need a custom credit card form
-        $this->method_title = 'Openpay';
-        $this->method_description = 'Openpay Payments Description'; // will be displayed on the options page
+        $this->method_title = 'Openpay Cards';
+        $this->method_description = 'Provides a credit and debit card payment method with Openpay for WooCommerce.'; // will be displayed on the options page
 
         // Method with all the options fields
         $this->init_form_fields();
@@ -81,7 +80,7 @@ class WC_Openpay_Gateway extends WC_Payment_Gateway
         $this->minimum_amount_interest_free = $this->get_option('minimum_amount_interest_free');
         $this->charge_type = $this->country == 'MX' ? $this->get_option('charge_type') : $this->get_option('charge_type_co_pe');
 
-        $this->openpay = WC_Openpay_Client::getOpenpayInstance($this->sandbox, $this->merchant_id, $this->private_key, $this->country);
+        $this->openpay = OpenpayClient::getOpenpayInstance($this->sandbox, $this->merchant_id, $this->private_key, $this->country);
         $this->save_card_mode = $this->get_option('save_card_mode');
 
         $save_cc = isset($this->settings['save_cc']) ? (strcmp($this->settings['save_cc'], '0') != 0) : false;
@@ -299,7 +298,7 @@ class WC_Openpay_Gateway extends WC_Payment_Gateway
         wp_enqueue_script(   'openpay'   , plugins_url('assets/js/openpay.js', __FILE__), array( 'jquery' ), '', true);  
         */
 
-        $scripts = Openpay_Utils::getUrlScripts($this->country);
+        $scripts = OpenpayUtils::getUrlScripts($this->country);
         $openpayFraud = 'openpay_fraud_js';
 
         wp_enqueue_script($scripts['openpay_js']['tag'], plugins_url($scripts['openpay_js']['script'], __FILE__), '', '', true);
@@ -348,6 +347,8 @@ class WC_Openpay_Gateway extends WC_Payment_Gateway
         $openpay_payment_plan = $_POST['openpay_selected_installment'];
         $openpay_has_interest_pe = $_POST['openpay_has_interest_pe'];
 
+        $this->logger->info("[openpay_payment_plan] => " . json_encode($_POST['openpay_selected_installment']) );
+
 
 
         $this->logger->info('$openpay_tokenized_card ' . json_encode($openpay_tokenized_card));
@@ -356,7 +357,7 @@ class WC_Openpay_Gateway extends WC_Payment_Gateway
         $this->order = new WC_Order($order_id);
         $order = wc_get_order($order_id);
 
-        $customer_service = new WC_Openpay_Customer_Service($this->openpay, $this->country, $this->sandbox);
+        $customer_service = new OpenpayCustomerService($this->openpay, $this->country, $this->sandbox);
         $openpay_customer = $customer_service->retrieveCustomer($this->order);
 
         if (is_user_logged_in()) {
@@ -369,7 +370,7 @@ class WC_Openpay_Gateway extends WC_Payment_Gateway
             }
 
             if ($openpay_save_card_auth === '1' && $openpay_selected_card == 'new') {
-                $cards_service = new WC_Openpay_Cards_Service($this->openpay, $this->order, $this->country, $this->sandbox);
+                $cards_service = new OpenpayCardService($this->openpay, $this->order, $this->country, $this->sandbox);
                 $openpay_token = $cards_service->validateNewCard($openpay_customer, $openpay_token, $device_session_id, $openpay_tokenized_card, $this->save_card_mode);
                 $this->logger->info(' $openpay_token ' . json_encode($openpay_token));
                 if ($openpay_token) {
@@ -387,10 +388,13 @@ class WC_Openpay_Gateway extends WC_Payment_Gateway
             "openpay_charge_type" => $this->charge_type,
             'capture' => $this->capture,
             'sandbox' => $this->sandbox,
-            'openpay_has_interest_pe' => $openpay_has_interest_pe
+            'openpay_has_interest_pe' => $openpay_has_interest_pe,
+            'country' => $this->country
         );
 
-        $charge_service = new WC_Openpay_Charge_Service($this->openpay, $order, $customer_service, $this->capture);
+        $this->logger->info("[payment_settings] => " . json_encode($payment_settings) );
+
+        $charge_service = new OpenpayChargeService($this->openpay, $order, $customer_service, $this->capture);
         $charge = $charge_service->processOpenpayCharge($payment_settings);
 
         if ($charge !== false) {
@@ -464,7 +468,7 @@ class WC_Openpay_Gateway extends WC_Payment_Gateway
             $path = sprintf('/%s/customers/%s/cards/%s', $this->merchant_id, $openpay_customer->id, $openpay_token);
             $params = array('cvv2' => $cvv);
             $auth = $this->private_key;
-            $cardInfo = Openpay_Utils::requestOpenpay($path, $this->country, $this->sandbox, 'PUT', $params, $auth);
+            $cardInfo = OpenpayUtils::requestOpenpay($path, $this->country, $this->sandbox, 'PUT', $params, $auth);
             if (isset($cardInfo->error_code)) {
                 $this->logger->error('CVV update has failed.');
                 throw new Exception("Error en la transacción: No se pudo completar tu pago.");
@@ -484,7 +488,7 @@ class WC_Openpay_Gateway extends WC_Payment_Gateway
     public function process_admin_options()
     {
         parent::process_admin_options();
-        $settingsValidation = new WC_Openpay_Payment_Settings_Validation();
+        $settingsValidation = new OpenpayPaymentSettingsValidation();
         $settingsValidation->validateOpenpayCredentials();
         $settingsValidation->validateOpenpayCurrencies();
     }

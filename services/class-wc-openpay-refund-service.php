@@ -1,9 +1,5 @@
 <?php
 
-if(!class_exists('WC_Openpay_Cards_Service')) {
-  require_once(dirname(__DIR__) . "/services/class-wc-openpay-cards-service.php");
-}
-
 class WC_Openpay_Refund_Service {
     private $logger;
     private $sandbox;
