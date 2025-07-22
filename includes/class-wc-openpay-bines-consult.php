@@ -1,8 +1,5 @@
 <?php
-
-if (class_exists('WC_Payment_Gateway')) {
-    require_once(dirname(__DIR__) . '/class-wc-openpay-gateway.php');
-}
+use OpenpayCards\Includes\OpenpayUtils;
 
 class WC_Openpay_Bines_Consult {
 
@@ -30,7 +27,7 @@ class WC_Openpay_Bines_Consult {
 
                     case 'MX':
                         $path       = sprintf('/%s/bines/man/%s', $merchant_id, $card_bin);
-                        $cardInfo = Openpay_Utils::requestOpenpay($path, $country, $is_sandbox,null,null,$auth);
+                        $cardInfo = OpenpayUtils::requestOpenpay($path, $country, $is_sandbox,null,null,$auth);
                         
                         wp_send_json(array(
                             'status'    => 'success',
@@ -43,7 +40,7 @@ class WC_Openpay_Bines_Consult {
                         $logger->info("Entra a peru");
                         $path       = sprintf('/%s/bines/%s/promotions', $merchant_id, $card_bin);
                         $params     = array('amount' => $amount, 'currency' => $currency);
-                        $cardInfo    = Openpay_Utils::requestOpenpay($path, $country, $is_sandbox);
+                        $cardInfo    = OpenpayUtils::requestOpenpay($path, $country, $is_sandbox);
 
                         wp_send_json(array(
                             'status'        => 'success',
@@ -56,7 +53,7 @@ class WC_Openpay_Bines_Consult {
 
                     default:
                         $path       = sprintf('/cards/validate-bin?bin=%s', $card_bin);
-                        $cardInfo = Openpay_Utils::requestOpenpay($path, $country, $is_sandbox);
+                        $cardInfo = OpenpayUtils::requestOpenpay($path, $country, $is_sandbox);
                         wp_send_json(array(
                             'status' => 'success',
                             'card_type' => $cardInfo->card_type

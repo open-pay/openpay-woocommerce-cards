@@ -1,13 +1,8 @@
 <?php
-if(!class_exists('WC_Openpay_Cards_Service')) {
-  require_once(dirname(__DIR__) . "/services/class-wc-openpay-cards-service.php");
-}
-
-if(!class_exists('WC_Openpay_Installments')) {
-    require_once(dirname(__DIR__) . "/services/payment-settings/class-wc-openpay-installments.php");
-}
 
 use Automattic\WooCommerce\Blocks\Payments\Integrations\AbstractPaymentMethodType;
+use OpenpayCards\Services\OpenpayCardService;
+use OpenpayCards\Services\PaymentSettings\OpenpayInstallments;
 
 final class WC_Openpay_Gateway_Blocks_Support extends AbstractPaymentMethodType {
     
@@ -54,8 +49,8 @@ final class WC_Openpay_Gateway_Blocks_Support extends AbstractPaymentMethodType 
 	}
 
     public function get_payment_method_data() {
-      $cards_service = new WC_Openpay_Cards_Service();
-      $installments = new WC_Openpay_Installments();
+      $cards_service = new OpenpayCardService();
+      $installments = new OpenpayInstallments();
       $openpay_gateway = new WC_Openpay_Gateway();
       $sandboxUrlPrefix = 'yes' === $this->get_setting( 'sandbox' ) ? 'sandbox-' :'';
 
