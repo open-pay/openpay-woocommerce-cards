@@ -279,17 +279,16 @@ const Form = ( props ) => {
                     setOpenpayHolderName = {setOpenpayHolderName}/>
             : null }
 
-            { showInvalidCardAlert ?
-                <div>
-                    <p style={{color: 'red', fontSize: 13, marginBottom: 0}}>Número de tarjeta invalido</p>
-                </div>
-            : null }
-
             { openpaySelectedCard == 'new' ?
                 /* OPENPAY CARD NUMBER */
                 <CardNumberComponent
                     openpayCardNumber={openpayCardNumber}
                     setOpenpayCardNumber = {setOpenpayCardNumber}/>
+            : null }
+            { showInvalidCardAlert ?
+                <div style={{color: 'red', fontSize: 13, width: '100%'}}>
+                    <p style={{marginTop: 0}}>Número de tarjeta invalido</p>
+                </div>
             : null }
 
             { openpaySelectedCard == 'new' ?

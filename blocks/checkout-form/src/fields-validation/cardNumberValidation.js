@@ -5,7 +5,7 @@ export const CardNumberValidation = (openpayCardNumber) => {
         return 'El campo de número de tarjeta se encuentra vacío';
     }
 
-    if(openpayCardNumber.length < 16){
+    if(openpayCardNumber.length < 15){
         return 'Numero de digitos de tarjeta incorrectos';
     }
 
