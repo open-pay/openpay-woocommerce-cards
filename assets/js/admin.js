@@ -1,5 +1,5 @@
 jQuery(document).ready(function () {
-    var country = jQuery('#woocommerce_openpay_cards_country').val();
+    var country = jQuery('#woocommerce_wc_openpay_gateway_country').val();
     showOrHideElements(country)
 
     jQuery('#woocommerce_wc_openpay_gateway_country').change(function () {
