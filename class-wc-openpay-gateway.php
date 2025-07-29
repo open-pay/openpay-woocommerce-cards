@@ -6,6 +6,7 @@ use OpenpayCards\Includes\OpenpayClient;
 use OpenpayCards\Services\OpenpayCustomerService;
 use OpenpayCards\Services\OpenpayChargeService;
 use OpenpayCards\Services\OpenpayCardService;
+use OpenpayCards\Services\PaymentSettings\OpenpayInstallments;
 use OpenpayCards\Services\PaymentSettings\OpenpayPaymentSettingsValidation;
 
 /* AUTOLOADER */
@@ -248,42 +249,30 @@ class WC_Openpay_Gateway extends WC_Payment_Gateway
      */
     public function payment_fields()
     {
-
-        // ok, let's display some description before the payment form
-        if ($this->description) {
             // you can instructions for test mode, I mean test card numbers etc.
             if ($this->sandbox) {
-                $this->description .= ' TEST MODE ENABLED. In test mode, you can use the card numbers listed in <a href="#">documentation</a>.';
+                $this->description .= 'SANDBOX MODE ENABLED. In test mode, you can use the card number 4111111111111111 with any CVC and a valid expiration date.';
                 $this->description = trim($this->description);
             }
-            // display the description with <p> tags etc.
-            echo wpautop(wp_kses_post($this->description));
-        }
+
+        $cards_service = new OpenpayCardService();
+        $savedCardsList = $cards_service->getCreditCardList();
+
+        $OpenpayInstallments = new OpenpayInstallments();
+        $installments = $OpenpayInstallments->getInstallments();
 
         // I will echo() the form, but you can close PHP tags and print it directly in HTML
-        echo '<fieldset id=' . esc_attr($this->id) . '-cc-form" class="wc-credit-card-form wc-payment-form" style="background:transparent;">';
+       // echo '<fieldset id=' . esc_attr($this->id) . '-cc-form" class="wc-credit-card-form wc-payment-form" style="background:transparent;">';
 
         // Add this action hook if you want your custom payment gateway to support it
-        do_action('woocommerce_credit_card_form_start', $this->id);
+        // do_action('woocommerce_credit_card_form_start', $this->id);
 
-        // I recommend to use inique IDs, because other gateways could already use #ccNo, #expdate, #cvc
-        echo '<div class="form-row form-row-wide">
-                <label>Card Number <span class="required">*</span></label>
-                <input id="openpay-card-number" class="input-text wc-credit-card-form-card-number" type="text" maxlength="20" autocomplete="off" placeholder="•••• •••• •••• ••••" data-openpay-card="card_number" />
-            </div>
-            <div class="form-row form-row-first">
-                <label>Expiry Date <span class="required">*</span></label>
-                <input id="openpay-card-expiry" class="input-text wc-credit-card-form-card-expiry" type="text" autocomplete="off" placeholder="MM / AA" data-openpay-card="expiration_year" />
-            </div>
-            <div class="form-row form-row-last">
-                <label>Card Code (CVC) <span class="required">*</span></label>
-                <input id="openpay-card-cvc" name="openpay-card-cvc" class="input-text wc-credit-card-form-card-cvc openpay-card-input-cvc" type="password" autocomplete="off" placeholder="CVC" data-openpay-card="cvv2" />
-            </div>
-            <div class="clear"></div>';
+        $images_dir = plugin_dir_url( __FILE__ ).'/assets/images/';
+        include_once('templates/payment.php');
 
-        do_action('woocommerce_credit_card_form_end', $this->id);
+       // do_action('woocommerce_credit_card_form_end', $this->id);
 
-        echo '<div class="clear"></div></fieldset>';
+       // echo '<div class="clear"></div></fieldset>';
     }
 
     /*
@@ -306,12 +295,20 @@ class WC_Openpay_Gateway extends WC_Payment_Gateway
         wp_enqueue_script('payment', plugins_url('assets/js/jquery.payment.js', __FILE__), array('jquery'), '', true);
         wp_enqueue_script('wc_openpay', plugins_url('assets/js/openpay.js', __FILE__), array('jquery'), '', true);
 
+        $OpenpayInstallments = new OpenpayInstallments();
+
+        // $openpay_params is only used to HTML form.
         $openpay_params = array(
             'merchant_id' => $this->merchant_id,
             'public_key' => $this->public_key,
             'sandbox' => $this->sandbox,
+            'country' => $this->country,
+            'installments' => $OpenpayInstallments->getInstallments(),
             'bootstrap_css' => plugins_url('assets/css/bootstrap.css', __FILE__),
             'bootstrap_js' => plugins_url('assets/js/bootstrap.js', __FILE__),
+            'ajaxurl' => admin_url('admin-ajax.php'),
+            'save_cc_option' => $this->save_card_mode,
+            'use_card_points' => $this->card_points
         );
 
         wp_localize_script('wc_openpay', 'openpay_params', $openpay_params);
@@ -346,6 +343,20 @@ class WC_Openpay_Gateway extends WC_Payment_Gateway
         $openpay_card_points_confirm = $_POST['openpay_card_points_confirm'];
         $openpay_payment_plan = $_POST['openpay_selected_installment'];
         $openpay_has_interest_pe = $_POST['openpay_has_interest_pe'];
+
+        if (!$openpay_payment_plan){
+            switch ($this->country) {
+                case 'MX':
+                    $openpay_payment_plan = $_POST['openpay_month_interest_free'];
+                    break;
+                case 'CO':
+                    $openpay_payment_plan = $_POST['openpay_installments'];
+                    break;
+                case 'PE':
+                    $openpay_payment_plan = $_POST['openpay_installments_pe'];
+                    break;
+            }
+        }
 
         $this->logger->info("[openpay_payment_plan] => " . json_encode($_POST['openpay_selected_installment']) );
 
