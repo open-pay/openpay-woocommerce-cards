@@ -4,6 +4,7 @@ namespace OpenpayCards\Services;
 use OpenpayCards\Handlers\OpenpayChargeHandlerCo;
 use OpenpayCards\Handlers\OpenpayChargeHandlerMx;
 use OpenpayCards\Handlers\OpenpayChargeHandlerPe;
+use OpenpayCards\Includes\OpenpayErrorHandler;
 
 
 // Ensure WordPress functions are available
@@ -22,6 +23,7 @@ class OpenpayChargeService
     private $order;
     private $customer_service;
     private $capture;
+    private $openpay;
 
     public function __construct($openpay, $order, $customer_service, $capture)
     {
@@ -72,10 +74,16 @@ class OpenpayChargeService
             $this->logger->info('wc-openpay-charge-service.create');
             $this->logger->info("[OpenpayChargeService.create - CHARGE_REQUEST] => " . json_encode($charge_request) );
             if (is_user_logged_in()) {
-                $charge = $openpay_customer->charges->create($charge_request);
+                $charge = OpenpayErrorHandler::catchOpenpayError(function ($openpay_customer, $charge_request) {
+                    $openpay_customer->charges->create($charge_request);
+                });
+                
                 $this->logger->info('[wc-openpay-charge-service.create] => charge result=> ' . $charge->id);
             } else {
-                $charge = $this->openpay->charges->create($charge_request);
+                $openpay = $this->openpay;
+                $charge = OpenpayErrorHandler::catchOpenpayError(function () use ($openpay, $charge_request) {
+                    return $openpay->charges->create($charge_request);
+                });
                 $this->logger->info('[wc-openpay-charge-service.create] => charge result=> ' . $charge->id);
             }
             if($charge !==false){
@@ -103,6 +111,7 @@ class OpenpayChargeService
                 $charge_request['use_3d_secure'] = true;
                 $charge_request['redirect_url'] =$this->redirect_url_3d();
                 $charge = $openpay_customer->charges->create($charge_request);
+                
 
                 $this->logger->info('createOpenpayCharge Auth Order => '.$this->order->get_id());
 

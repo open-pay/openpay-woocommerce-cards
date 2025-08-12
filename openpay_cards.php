@@ -24,6 +24,7 @@
 add_filter( 'woocommerce_payment_gateways', 'openpay_add_gateway_class' );
 
 use Automattic\WooCommerce\Internal\DataStores\Orders\CustomOrdersTableController;
+use Openpay\Resources\OpenpayCard;
 
 /*
  * WC_Openpay_Gateway Class file is called by openpay_init_gateway function
@@ -56,6 +57,14 @@ add_action('woocommerce_order_item_add_action_buttons','add_partial_capture_togg
 
 add_action('wp_ajax_wc_openpay_admin_order_capture','ajax_capture_handler');
 
+add_action('plugins_loaded', function () {
+    \OpenpayCards\Includes\OpenpayErrorHandler::init();
+});
+
+//Hooks para llamar servicio 3Dsecure
+//add_action('woocommerce_api_openpay_confirm', 'openpay_woocommerce_confirm', 10, 0);
+//add_action('template_redirect', 'wc_custom_redirect_after_purchase',0);
+
 // Agrega un enlace de Ajustes del plugin
 function openpay_settings_link ( $links ) {
     $settings_link = '<a href="' . admin_url('admin.php?page=wc-settings&tab=checkout&section=wc_openpay_gateway' ). '">' . __('Ajustes', 'openpay-cards') . '</a>';
@@ -73,11 +82,14 @@ function openpay_init_gateway() {
         require_once('class-wc-openpay-gateway.php');
     }
 	if(!class_exists('WC_Openpay_Refund_Service')) {
-    	require_once(dirname(__FILE__) . "/services/class-wc-openpay-refund-service.php");
+    	require_once(dirname(__FILE__) . "/Services/class-wc-openpay-refund-service.php");
 	}
 	if(!class_exists('WC_Openpay_Capture_Service')) {
-    	require_once(dirname(__FILE__) . "/services/class-wc-openpay-capture-service.php");
+    	require_once(dirname(__FILE__) . "/Services/class-wc-openpay-capture-service.php");
 	}
+	/*if(!class_exists('Openpay3dSecure')) {
+    	require_once(dirname(__FILE__) . "/Services/PaymentSettings/Openpay3dSecure.php");
+	}*/
 }
 
 function openpay_cards_admin_enqueue($hook) {
@@ -117,7 +129,7 @@ function openpay_cards_admin_enqueue($hook) {
 }
 
 function openpay_blocks_support() {
-	require_once __DIR__ . '/includes/class-wc-openpay-gateway-blocks-support.php';
+	require_once __DIR__ . '/Includes/class-wc-openpay-gateway-blocks-support.php';
 
 	add_action(
 		'woocommerce_blocks_payment_method_type_registration',
@@ -149,7 +161,7 @@ function openpay_woocommerce_order_refunded($order_id, $refund_id) {
 
 function get_type_card_openpay() {
 	if(!class_exists('WC_Openpay_Bines_Consult')) {
-    	require_once(dirname(__FILE__) . "/includes/class-wc-openpay-bines-consult.php");
+    	require_once(dirname(__FILE__) . "/Includes/class-wc-openpay-bines-consult.php");
 	}
 
 	$openpayBinesConsult = new WC_Openpay_Bines_Consult();
@@ -176,3 +188,8 @@ function ajax_capture_handler() {
     $capture_service = new WC_Openpay_Capture_Service($openpay_gateway->settings['sandbox'], $openpay_gateway->settings['country'], $openpayInstance);
 	$capture_service->ajaxCaptureHandler();
 }
+
+/*function openpay_woocommerce_confirm() {
+	$openpay3dSecure = new Openpay3dSecure();
+	$openpay3dSecure->openpay_woocommerce_confirm();
+}*/

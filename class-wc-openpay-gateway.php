@@ -1,7 +1,7 @@
 <?php
 //namespace OpenpayCards;
 
-use OpenpayCards\includes\OpenpayUtils;
+use OpenpayCards\Includes\OpenpayUtils;
 use OpenpayCards\Includes\OpenpayClient;
 use OpenpayCards\Services\OpenpayCustomerService;
 use OpenpayCards\Services\OpenpayChargeService;
