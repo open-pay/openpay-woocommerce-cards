@@ -45,8 +45,10 @@ class WC_Openpay_Refund_Service {
         $this->logger->info('_transaction_id: '.$transaction_id);
 
         try {
-            if ($this->country == 'CO') {             
-                throw new Error("Openpay plugin does not support refunds");
+            if ($this->country == 'CO') {
+                throw new Exception("Openpay plugin does not support refunds");
+                //$order->add_order_note('Openpay plugin does not support refunds');
+                //return;
             }
 
             if (!strlen($customer_id)) {

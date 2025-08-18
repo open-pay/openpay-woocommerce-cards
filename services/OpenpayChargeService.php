@@ -12,9 +12,9 @@ if (!defined('ABSPATH')) {
     exit; // Exit if accessed directly
 }
 
-require_once ABSPATH . 'wp-load.php';
-require_once ABSPATH . 'wp-includes/pluggable.php';
-require_once ABSPATH . 'wp-includes/user.php'; // Ensure user-related functions are loaded
+//require_once ABSPATH . 'wp-load.php';
+//require_once ABSPATH . 'wp-Includes/pluggable.php';
+//require_once ABSPATH . 'wp-Includes/user.php'; // Ensure user-related functions are loaded
 
 class OpenpayChargeService
 {
@@ -74,8 +74,8 @@ class OpenpayChargeService
             $this->logger->info('wc-openpay-charge-service.create');
             $this->logger->info("[OpenpayChargeService.create - CHARGE_REQUEST] => " . json_encode($charge_request) );
             if (is_user_logged_in()) {
-                $charge = OpenpayErrorHandler::catchOpenpayError(function ($openpay_customer, $charge_request) {
-                    $openpay_customer->charges->create($charge_request);
+                $openpay_customer = OpenpayErrorHandler::catchOpenpayError(function () use($openpay_customer, $charge_request) {
+                   return $openpay_customer->charges->create($charge_request);
                 });
                 
                 $this->logger->info('[wc-openpay-charge-service.create] => charge result=> ' . $charge->id);
