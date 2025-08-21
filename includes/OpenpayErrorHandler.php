@@ -47,13 +47,13 @@ class OpenpayErrorHandler {
             return $callback();
         } catch (OpenpayApiConnectionError $e) {
             self::handleOpenpayPluginException($e);
-            throw new Exception("Error al conectarse al api de openpay.", $e->getCode());  // ** SE CREA UNA EXCEPCION PERSONALIZADA PRESERVANDO EL CODE DE LA EXCEPCION ORIGINAL
+            throw new Exception("El servidor no responde", $e->getCode());  // ** SE CREA UNA EXCEPCION PERSONALIZADA PRESERVANDO EL CODE DE LA EXCEPCION ORIGINAL
         } catch (OpenpayApiTransactionError $e) {
             self::handleOpenpayPluginException($e);
-            throw new Exception("Ocurrió un error con la transacción. Por favor intenta nuevamente.", $e->getCode());
+            throw new Exception("Tu tarjeta fue rechazada. Por favor intenta con otra.", $e->getCode());
         } catch (OpenpayApiError $e) {
             self::handleOpenpayPluginException($e);
-            throw new Exception("Error en la conexión con Openpay. Intenta más tarde.", $e->getCode());
+            throw new Exception("El pago no fue exitoso por un error en el sistema, puedes intentar de nuevo.", $e->getCode());
         }
         return false;
     }

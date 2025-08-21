@@ -8,6 +8,7 @@ use OpenpayCards\Services\OpenpayChargeService;
 use OpenpayCards\Services\OpenpayCardService;
 use OpenpayCards\Services\PaymentSettings\OpenpayInstallments;
 use OpenpayCards\Services\PaymentSettings\OpenpayPaymentSettingsValidation;
+use OpenpayCards\Services\PaymentSettings\Openpay3dSecure;
 
 /* AUTOLOADER */
 spl_autoload_register(function ($class_name) {
