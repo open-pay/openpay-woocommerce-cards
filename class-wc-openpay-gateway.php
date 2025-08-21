@@ -1,13 +1,14 @@
 <?php
 //namespace OpenpayCards;
 
-use OpenpayCards\includes\OpenpayUtils;
+use OpenpayCards\Includes\OpenpayUtils;
 use OpenpayCards\Includes\OpenpayClient;
 use OpenpayCards\Services\OpenpayCustomerService;
 use OpenpayCards\Services\OpenpayChargeService;
 use OpenpayCards\Services\OpenpayCardService;
 use OpenpayCards\Services\PaymentSettings\OpenpayInstallments;
 use OpenpayCards\Services\PaymentSettings\OpenpayPaymentSettingsValidation;
+use OpenpayCards\Services\PaymentSettings\Openpay3dSecure;
 
 /* AUTOLOADER */
 spl_autoload_register(function ($class_name) {
