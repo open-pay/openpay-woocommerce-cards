@@ -8,7 +8,7 @@ const { getSetting } = window.wc.wcSettings
 const settings = getSetting( 'wc_openpay_gateway_data', {} )
 
 //const label = decodeEntities( settings.title )
-const label = decodeEntities( 'Openpay Cards' )
+const label = decodeEntities( 'Pago con tarjeta (Openpay)' )
 
 
 /*

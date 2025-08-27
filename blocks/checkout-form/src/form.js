@@ -8,12 +8,12 @@ import CardExpiryComponent from "./form-fields/cardExpiryComponent";
 import CardCvcComponent from "./form-fields/cardCvcComponent";
 import SaveCardAuthComponent from "./form-fields/saveCardAuthComponent";
 import {OpenpayServiceValidation} from "./fields-validation/openpayServiceValidation";
+import {CardCvcValidation} from "./fields-validation/cardCvcValidation";
 
 
 const { getSetting } = window.wc.wcSettings
 const settings = getSetting( 'wc_openpay_gateway_data', {} )
 const label = decodeEntities( settings.title )
-console.log('{ REACT INIT SETTINGS } - ' + JSON.stringify(settings));
 
 
 const Form = ( props ) => {
@@ -63,7 +63,7 @@ const Form = ( props ) => {
             card_number: openpayCardNumber,
             cvv2: openpayCardCvc,
             expiration_month: openpayCardExpiry.substring(0,2),
-            expiration_year: openpayCardExpiry.substring(2),
+            expiration_year: openpayCardExpiry.substring(openpayCardExpiry.length-2),
             address:{
                 line1:billing.billingAddress.address_1,
                 line2:billing.billingAddress.address_2,
@@ -74,12 +74,8 @@ const Form = ( props ) => {
             }
         };
 
-        console.log('{ REACT } - ' + JSON.stringify(data));
 
         const result = await tokenRequestWrapper(data);
-        console.log("Token Request Result: ");
-        console.log(result);
-        console.log(data);
         if(result.data.error_code){
             return {
                 errorCode: result.data.error_code,
@@ -109,21 +105,15 @@ const Form = ( props ) => {
     useEffect( () => {
         const unsubscribe = onPaymentSetup( async () => {
 
-            //console.log('onPaymentSetup_openpayHolderName - ' + openpayHolderName);
-            //console.log('onPaymentSetup_deviceSessionId - ' + deviceSessionId);
-            //console.log('onPaymentSetup_CARD - ' + card );
-            //console.log('Billing - ' + JSON.stringify(billing))
-            //console.log('Billing - ' + billing.billingAddress.first_name);
+            if(openpaySelectedCard === 'new'){
 
-            const openpayFieldsErrorMessage = OpenpayFieldsValidation(openpayHolderName,openpayCardNumber,openpayCardExpiry,openpayCardCvc);
-            if(openpayFieldsErrorMessage){
-                return {
-                    type: emitResponse.responseTypes.ERROR,
-                    message: openpayFieldsErrorMessage,
-                };
-            }
-
-            if(openpayHolderName.length){
+                const openpayFieldsErrorMessage = OpenpayFieldsValidation(openpayHolderName,openpayCardNumber,openpayCardExpiry,openpayCardCvc);
+                if(openpayFieldsErrorMessage){
+                    return {
+                        type: emitResponse.responseTypes.ERROR,
+                        message: openpayFieldsErrorMessage,
+                    };
+                }
 
                const result = await tokenRequest();
                if(result !== undefined){
@@ -137,8 +127,6 @@ const Form = ( props ) => {
                        }
                    }
                }
-
-                console.log('{ REACT } - after token request');
 
                 if ( openpayToken.length) {
                     return {
@@ -158,6 +146,17 @@ const Form = ( props ) => {
                     };
                 }
             }else{
+
+                if(!(settings.saveCardMode === 2  && settings.country === 'PE')){
+                    const CardCvcValidationErrorMessage = CardCvcValidation(openpayCardCvc);
+                    if(CardCvcValidationErrorMessage){
+                        return {
+                            type: emitResponse.responseTypes.ERROR,
+                            message: CardCvcValidationErrorMessage,
+                        };
+                    }
+                }
+
                 return {
                     type: emitResponse.responseTypes.SUCCESS,
                     meta: {
@@ -176,7 +175,9 @@ const Form = ( props ) => {
             };
         } );
 
-
+        if(openpaySelectedCard !== 'new' && settings.country === 'CO'){
+            setPayments(Array.from({ length: 36 }, (_, i) => i + 1));
+        }
 
         if(isCompleteCardNumberField.current && openpayCardNumber.length < 15){
             setShowInvalidCardAlert(true);
@@ -189,8 +190,8 @@ const Form = ( props ) => {
             const currentFirst8Digits = openpayCardNumber.slice(0, 8);
 
             if(previousFirst8Digits.current !== currentFirst8Digits) {
+                setPayments(null);
                 previousFirst8Digits.current = currentFirst8Digits;
-                console.log("Cambiaron los primeros 8 digitos");
             
                 setActivateForm(false);
                 axios.post(
@@ -216,10 +217,9 @@ const Form = ( props ) => {
                         }
                         if(settings.installments.paymentPlan) setPayments(response.data.installments);
                     } else {
-                        if(response.data.card_type == 'CREDIT') setPayments(Array.from({ length: 36 }, (_, i) => i + 1));
+                        setPayments(Array.from({ length: 36 }, (_, i) => i + 1));
                     }
                     setActivateForm(true);
-                    console.log(response);
                 }).catch((error) => {
                     console.log(error);
                     setActivateForm(true);
@@ -312,7 +312,8 @@ const Form = ( props ) => {
                     setOpenpaySaveCardAuth = {setOpenpaySaveCardAuth}/>
                  : null }
 
-            { payments && payments.length > 0 && (cardType == 'credit' || cardType == 'CREDIT') && withInterestPeru == false ?
+            { payments && payments.length > 0 && (cardType === 'credit' || cardType === 'CREDIT') && withInterestPeru === false ||
+                (payments && payments.length > 0 && settings.country === 'CO') ?
             <div class="wc-blocks-components-select is-active" style={{flex: '0 0 100%'}}>
                 <div class="wc-blocks-components-select__container">
                     <label class="wc-blocks-components-select__label" for="installments">{settings.country == 'MX' ? 'Meses sin intereses' : 'Cuotas'}</label>
