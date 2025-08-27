@@ -10,7 +10,7 @@ class OpenpayChargeHandlerPe {
     public function applyPaymentSettings($charge_request,$payment_settings){
 
         // CUOTAS CON/SIN INTERÉS
-        if (isset($payment_settings['openpay_payment_plan'])){
+        if (isset($payment_settings['openpay_payment_plan']) && $payment_settings['openpay_payment_plan'] != 1){
             if(isset($payment_settings['openpay_has_interest_pe']) && $payment_settings['openpay_has_interest_pe'] == true) {
                 $charge_request["payment_plan"] = array("payments" => $payment_settings['openpay_payment_plan'], "payments_type" => "WITH_INTEREST");
             } else {
@@ -29,7 +29,7 @@ class OpenpayChargeHandlerPe {
             $charge_request["capture"] = $payment_settings['capture'];
         }
 
-        $this->logger->info("[OpenpayChargeHandlerCo.applyPaymentSettings] => " . json_encode($charge_request) );
+        $this->logger->info("[OpenpayChargeHandlerPe.applyPaymentSettings] => " . json_encode($charge_request) );
         return $charge_request;
     }
 

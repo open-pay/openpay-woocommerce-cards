@@ -335,7 +335,7 @@ class WC_Openpay_Gateway extends WC_Payment_Gateway
     public function process_payment($order_id)
     {
 
-        $cvv = $_POST['openpay_card_cvc'];
+        $cvv = $_POST['openpay_card_cvc'] ?: $_POST['openpay-card-cvc'];
         $openpay_token = $_POST['openpay_token'];
         $device_session_id = $_POST['device_session_id'];
         $openpay_tokenized_card = $_POST['openpay_tokenized_card'];
@@ -374,7 +374,7 @@ class WC_Openpay_Gateway extends WC_Payment_Gateway
 
         if (is_user_logged_in()) {
             if ($openpay_selected_card !== 'new' && $this->save_card_mode === '1') {
-                $this->logger->info(' cvvValidation ');
+                $this->logger->info(' cvvValidation: ' . $cvv);
                 $this->cvvValidation($openpay_selected_card, $openpay_customer, $cvv);
                 $openpay_token = $openpay_selected_card;
             } elseif ($openpay_selected_card !== 'new' && $this->save_card_mode === '2' && $this->country === 'PE') {
@@ -420,7 +420,7 @@ class WC_Openpay_Gateway extends WC_Payment_Gateway
                 $this->logger->info('Completing Payment');
                 // some notes to customer (replace true with false to make it private)
                 $this->order->add_order_note('Orden Pagada', true);
-                $this->order->add_order_note(sprintf("%s payment completed with Transaction Id of '%s'", $this->GATEWAY_NAME, $this->transaction_id));
+                $this->order->add_order_note(sprintf("%s - Pago Completado. ID de transacción: '%s'", $this->method_title, $charge->id));
             }
             // Si el cargo es Frictionless y es inmediato, se marca la orden como completada
             if (str_contains($redirect_url, 'frictionless') && $this->capture) {
@@ -430,17 +430,17 @@ class WC_Openpay_Gateway extends WC_Payment_Gateway
                 $this->logger->info('Completing Payment');
                 // some notes to customer (replace true with false to make it private)
                 $this->order->add_order_note('Orden Pagada', true);
-                $this->order->add_order_note(sprintf("%s payment completed by 3DS frictionless with Transaction Id of '%s'", $this->GATEWAY_NAME, $this->transaction_id));
+                $this->order->add_order_note(sprintf("%s - Pago completado vía 3DS (frictionless). ID de transacción: '%s'", $this->method_title, $charge->id));
                 // Si el cargo es Challenge se pone en status on-hold hasta concluir el proceso.
             } else if ($redirect_url && !str_contains($redirect_url, 'frictionless') && $this->capture) {
                 $this->logger->info("[wc-openpay-gateway] => challenge");
                 $this->order->update_status('on-hold');
-                $this->order->add_order_note(sprintf("%s payment on hold by 3DS challenge with Transaction Id of '%s'", $this->GATEWAY_NAME, $this->transaction_id));
+                $this->order->add_order_note(sprintf("%s - Pago en espera vía 3DS (challenge). ID de transacción: '%s'", $this->method_title, $charge->id));
                 // Si el cargo es pre-autorizado, se pone en status on-hold hasta concluir el proceso.
             } else if (!$this->capture) {
                 $this->logger->info("[wc-openpay-gateway] => capture");
                 $this->order->update_status('on-hold');
-                $this->order->add_order_note(sprintf("%s payment pre-authorized with Transaction Id of '%s'", $this->GATEWAY_NAME, $this->transaction_id));
+                $this->order->add_order_note(sprintf("%s - Pago preautorizado. ID de transacción: '%s'", $this->method_title, $charge->id));
             }
 
             // Empty cart
@@ -453,7 +453,7 @@ class WC_Openpay_Gateway extends WC_Payment_Gateway
             );
 
         } else {
-            $this->order->add_order_note(sprintf("%s Credit Card Payment Failed with message: '%s'", $this->get_method_title(), $this->transactionErrorMessage));
+            $this->order->add_order_note(sprintf("%s - Pago fallido. Error: '%s'", $this->method_title, $this->transactionErrorMessage));
             $this->order->set_status('failed');
             $this->order->save();
 
@@ -476,6 +476,8 @@ class WC_Openpay_Gateway extends WC_Payment_Gateway
 
     private function cvvValidation($openpay_token, $openpay_customer, $cvv)
     {
+        $cvv = (int)$cvv;
+        $this->logger->debug($cvv);
         if (is_numeric($cvv) && (strlen($cvv) == 3 || strlen($cvv) == 4)) {
             $path = sprintf('/%s/customers/%s/cards/%s', $this->merchant_id, $openpay_customer->id, $openpay_token);
             $params = array('cvv2' => $cvv);

@@ -84,7 +84,7 @@ function openpay_woocommerce_confirm()
                 $order->set_status('on-hold');
                 $order->save();
             } else {
-                $order->add_order_note(sprintf("%s Credit Card Payment Failed with message: '%s'", 'Openpay_Cards', 'Status ' . $charge->status));
+                $order->add_order_note(sprintf(" %s - Pago Fallido.  : '%s'", 'Openpay Cards', 'Status ' . $charge->status));
                 $order->set_status('failed');
                 $order->save();
 
@@ -97,7 +97,7 @@ function openpay_woocommerce_confirm()
         } else if ($order && $charge->status == 'completed') {
             $order->payment_complete();
             $woocommerce->cart->empty_cart();
-            $order->add_order_note(sprintf("%s payment completed with Transaction Id of '%s'", 'Openpay_Cards', $charge->id));
+            $order->add_order_note(sprintf("%s - Pago Completado: Transaction Id: '%s'", 'Openpay_Cards', $charge->id));
         }
 
         wp_redirect($openpay_cards->get_return_url($order));
