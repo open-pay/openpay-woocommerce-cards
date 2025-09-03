@@ -58,6 +58,12 @@ add_action('woocommerce_order_item_add_action_buttons','add_partial_capture_togg
 
 add_action('wp_ajax_wc_openpay_admin_order_capture','ajax_capture_handler');
 
+add_action( 'before_woocommerce_init', function() {
+    if ( class_exists( \Automattic\WooCommerce\Utilities\FeaturesUtil::class ) ) {
+        \Automattic\WooCommerce\Utilities\FeaturesUtil::declare_compatibility( 'custom_order_tables', __FILE__, true );
+    }
+} );
+
 /*3DS FUNCTION*/
 add_action('woocommerce_api_openpay_confirm', 'openpay_woocommerce_confirm', 10, 0);
 add_action('template_redirect', 'wc_custom_redirect_after_purchase',0);
@@ -198,7 +204,6 @@ function openpay_cards_admin_enqueue($hook) {
                 'order_id'      => $order_id,
             )
         );
-
     }
 }
 

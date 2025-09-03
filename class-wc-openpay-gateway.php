@@ -39,6 +39,7 @@ class WC_Openpay_Gateway extends WC_Payment_Gateway
     public $public_key;
     protected $card_points;
     protected $msi;
+    protected $iva = 0;
     protected $installments_is_active;
     protected $minimum_amount_interest_free;
     protected $transactionErrorMessage = null;
@@ -75,9 +76,10 @@ class WC_Openpay_Gateway extends WC_Payment_Gateway
         $this->sandbox = 'yes' === $this->get_option('sandbox');
         $this->merchant_id = $this->sandbox ? $this->get_option('test_merchant_id') : $this->get_option('live_merchant_id');
         $this->private_key = $this->sandbox ? $this->get_option('test_private_key') : $this->get_option('live_private_key');
-        $this->public_key = $this->sandbox ? $this->get_option('test_public_key') : $this->get_option('live_public_key');
+        $this->public_key = $this->sandbox ? $this->get_option('test_publishable_key') : $this->get_option('live_publishable_key');
         $this->card_points = 'yes' === $this->get_option('card_points');
         $this->msi = $this->get_option('msi');
+        $this->iva = $this->country == 'CO' ? $this->get_option('iva') : 0;
         $this->installments_is_active = 'yes' === $this->get_option('installments_is_active');
         $this->minimum_amount_interest_free = $this->get_option('minimum_amount_interest_free');
         $this->charge_type = $this->country == 'MX' ? $this->get_option('charge_type') : $this->get_option('charge_type_co_pe');
@@ -108,11 +110,11 @@ class WC_Openpay_Gateway extends WC_Payment_Gateway
     {
         $this->form_fields = array(
             'enabled' => array(
-                'title' => 'Enable/Disable',
-                'label' => 'Enable Openpay Payments',
+                'title' => __('Habilitar módulo', 'woothemes'),
+                'label' => __('Habilitar', 'woothemes'),
                 'type' => 'checkbox',
                 'description' => '',
-                'default' => 'no'
+                'default' => 'yes'
             ),
             'country' => array(
                 'type' => 'select',
@@ -125,36 +127,46 @@ class WC_Openpay_Gateway extends WC_Payment_Gateway
                 )
             ),
             'sandbox' => array(
-                'title' => 'Sandbox',
-                'label' => 'Enable Test Mode (Sandbox)',
                 'type' => 'checkbox',
-                'description' => 'Place the payment gateway in test mode using test API keys.',
-                'default' => 'yes',
-                'desc_tip' => true,
+                'title' => __('Modo de pruebas', 'woothemes'),
+                'label' => __('Habilitar', 'woothemes'),
+                'default' => 'no'
             ),
             'live_merchant_id' => array(
-                'title' => 'ID de comercio',
-                'type' => 'text'
+                'type' => 'text',
+                'title' => __('ID de comercio de producción', 'woothemes'),
+                'description' => __('Obten tus llaves de producción de tu cuenta de Openpay.', 'woothemes'),
+                'default' => __('', 'woothemes')
             ),
-            'live_public_key' => array(
-                'title' => 'Llave publica (Producción)',
-                'type' => 'text'
+            'live_publishable_key' => array(
+                'type' => 'text',
+                'title' => __('Llave pública de producción', 'woothemes'),
+                'description' => __('Obten tus llaves de producción de tu cuenta de Openpay ("pk_").', 'woothemes'),
+                'default' => __('', 'woothemes')
             ),
             'live_private_key' => array(
-                'title' => 'Llave secreta (Producción)',
-                'type' => 'password'
+                'type' => 'text',
+                'title' => __('Llave secreta de producción', 'woothemes'),
+                'description' => __('Obten tus llaves de producción de tu cuenta de Openpay ("sk_").', 'woothemes'),
+                'default' => __('', 'woothemes')
             ),
             'test_merchant_id' => array(
-                'title' => 'ID de comercio',
-                'type' => 'text'
+                'type' => 'text',
+                'title' => __('ID de comercio de pruebas', 'woothemes'),
+                'description' => __('Obten tus llaves de prueba de tu cuenta de Openpay.', 'woothemes'),
+                'default' => __('', 'woothemes')
             ),
-            'test_public_key' => array(
-                'title' => 'Llave publica (Sandbox)',
-                'type' => 'text'
+            'test_publishable_key' => array(
+                'type' => 'text',
+                'title' => __('Llave pública de pruebas', 'woothemes'),
+                'description' => __('Obten tus llaves de prueba de tu cuenta de Openpay ("pk_").', 'woothemes'),
+                'default' => __('', 'woothemes')
             ),
             'test_private_key' => array(
-                'title' => 'Llave secreta (Sandbox)',
-                'type' => 'password',
+                'type' => 'text',
+                'title' => __('Llave secreta de pruebas', 'woothemes'),
+                'description' => __('Obten tus llaves de prueba de tu cuenta de Openpay ("sk_").', 'woothemes'),
+                'default' => __('', 'woothemes')
             ),
             'charge_type' => array(
                 'title' => __('¿Cómo procesar el cargo?', 'woocommerce'),
@@ -181,7 +193,6 @@ class WC_Openpay_Gateway extends WC_Payment_Gateway
                     '3d' => __('3D Secure', 'woocommerce'),
                 ),
             ),
-
             'card_points' => array(
                 'type' => 'checkbox',
                 'title' => __('Pago con puntos', 'woothemes'),
@@ -234,6 +245,13 @@ class WC_Openpay_Gateway extends WC_Payment_Gateway
                 'description' => __('Habilitar pagos en cuotas', 'woocommerce'),
                 'desc_tip' => true,
                 'default' => 'no'
+            ),
+            'iva' => array(
+                'type' => 'number',
+                'required' => true,
+                'title' => __('IVA', 'woothemes'),
+                'default' => '0',
+                'id' => 'openpay_show_iva',
             ),
             // Monto minimo para meses sin intereses solo MX
             'minimum_amount_interest_free' => array(
@@ -401,7 +419,8 @@ class WC_Openpay_Gateway extends WC_Payment_Gateway
             'capture' => $this->capture,
             'sandbox' => $this->sandbox,
             'openpay_has_interest_pe' => $openpay_has_interest_pe,
-            'country' => $this->country
+            'country' => $this->country,
+            'iva' => $this->iva
         );
 
         $this->logger->info("[payment_settings] => " . json_encode($payment_settings) );

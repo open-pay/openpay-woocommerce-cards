@@ -25,6 +25,11 @@ class OpenpayChargeHandlerCo {
             $charge_request["capture"] = $payment_settings['capture'];
         }
 
+        // APLICA IVA
+        if (isset($payment_settings['iva']) && $payment_settings['iva'] != 0){
+            $charge_request['iva'] = $payment_settings['iva'];
+        }
+
         $this->logger->info("[OpenpayChargeHandlerCo.applyPaymentSettings] => " . json_encode($charge_request) );
         return $charge_request;
     }

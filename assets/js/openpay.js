@@ -4,15 +4,6 @@ OpenPay.setApiKey(openpay_params.public_key);
 OpenPay.setSandboxMode(openpay_params.sandbox);
 var deviceSessionId = OpenPay.deviceData.setup();
 
-console.log("openpay_params: " + openpay_params);
-console.log("Merchant_ID: " + openpay_params.merchant_id);
-console.log("PublicKey: " + openpay_params.public_key);
-console.log("sandbox: " + openpay_params.sandbox);
-console.log("country: " + openpay_params.country);
-console.log("deviceSessionId: " + deviceSessionId);
-console.log("openpay_params.installments.payment_plan " + openpay_params.installments.paymentPlan);
-console.log("openpay_params.installments.payments " + openpay_params.installments.payments);
-
 jQuery(document).ready(function () {
     jQuery('#device_session_id').val(deviceSessionId);
 
