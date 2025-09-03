@@ -4,7 +4,7 @@ Tags: payment gateway, openpay
 Requires at least: 4.8
 Tested up to: 6.8.1
 Requires PHP: 5.9
-Stable tag: 3.0.0
+Stable tag: 3.0.1
 License: GNU General Public License v3.0
 License URI: http://www.gnu.org/licenses/gpl-3.0.html
 
@@ -16,6 +16,8 @@ For more information about this module go to:
 http://www.openpay.mx/docs/plugins/woocommerce.html
 
 == Changelog ==
+= 3.0.1 =
+* Fix. Mantenimientos, configuración IVA Colombia.
 = 3.0.0 =
 * Enhancement. Soporte y compatibilidad para bloques Gutenberg
 = 2.9.7 =
