@@ -39,6 +39,7 @@ class WC_Openpay_Gateway extends WC_Payment_Gateway
     public $public_key;
     protected $card_points;
     protected $msi;
+    protected $iva = 0;
     protected $installments_is_active;
     protected $minimum_amount_interest_free;
     protected $transactionErrorMessage = null;
@@ -78,6 +79,7 @@ class WC_Openpay_Gateway extends WC_Payment_Gateway
         $this->public_key = $this->sandbox ? $this->get_option('test_publishable_key') : $this->get_option('live_publishable_key');
         $this->card_points = 'yes' === $this->get_option('card_points');
         $this->msi = $this->get_option('msi');
+        $this->iva = $this->country == 'CO' ? $this->get_option('iva') : 0;
         $this->installments_is_active = 'yes' === $this->get_option('installments_is_active');
         $this->minimum_amount_interest_free = $this->get_option('minimum_amount_interest_free');
         $this->charge_type = $this->country == 'MX' ? $this->get_option('charge_type') : $this->get_option('charge_type_co_pe');
@@ -417,7 +419,8 @@ class WC_Openpay_Gateway extends WC_Payment_Gateway
             'capture' => $this->capture,
             'sandbox' => $this->sandbox,
             'openpay_has_interest_pe' => $openpay_has_interest_pe,
-            'country' => $this->country
+            'country' => $this->country,
+            'iva' => $this->iva
         );
 
         $this->logger->info("[payment_settings] => " . json_encode($payment_settings) );
