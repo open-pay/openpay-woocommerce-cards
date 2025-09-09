@@ -2,10 +2,13 @@
 const cardExpiryComponent = (props ) => {
 
     const cardExpiryInputValidation = (e) => {
+        jQuery('.wc-credit-card-block-form-card-expiry').payment('formatCardExpiry');
         const value = e.target.value;
-        if(/^\d{0,4}$/.test(value)){
+        //if(/^\d{0,4}$/.test(value)){
             props.setOpenpayCardExpiry(value);
-        }
+        //}
+
+
     }
 
     return (
@@ -20,7 +23,7 @@ const cardExpiryComponent = (props ) => {
                 type="text"
                 autocomplete="off"
                 placeholder="MM / AA"
-                maxlength="4"
+                maxlength="7"
                 data-openpay-card="expiration_year"/>
         </div>
     );

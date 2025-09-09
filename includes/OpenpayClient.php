@@ -16,6 +16,7 @@ class OpenpayClient {
         Openpay::setProductionMode($sandbox ? false : true);
         $openpay = Openpay::getInstance($merchant_id, $private_key, $country, self::getClientIp());
         $userAgent = "Openpay-WOOC".$country."/v2";
+        Openpay::setUserAgent($userAgent);
         return $openpay;
     }
 

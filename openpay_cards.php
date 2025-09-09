@@ -3,7 +3,7 @@
 * Plugin Name: Openpay Cards Plugin
 * Plugin URI: http://www.openpay.mx/docs/plugins/woocommerce.html
 * Description: Provides a credit card payment method with Openpay for WooCommerce.
-* Version: 3.0.0
+* Version: 3.0.1
 * Author: Openpay
 * Author URI: http://www.openpay.mx
 * Developer: Openpay
@@ -58,6 +58,12 @@ add_action('woocommerce_order_item_add_action_buttons','add_partial_capture_togg
 
 add_action('wp_ajax_wc_openpay_admin_order_capture','ajax_capture_handler');
 
+add_action( 'before_woocommerce_init', function() {
+    if ( class_exists( \Automattic\WooCommerce\Utilities\FeaturesUtil::class ) ) {
+        \Automattic\WooCommerce\Utilities\FeaturesUtil::declare_compatibility( 'custom_order_tables', __FILE__, true );
+    }
+} );
+
 /*3DS FUNCTION*/
 add_action('woocommerce_api_openpay_confirm', 'openpay_woocommerce_confirm', 10, 0);
 add_action('template_redirect', 'wc_custom_redirect_after_purchase',0);
@@ -84,7 +90,7 @@ function openpay_woocommerce_confirm()
                 $order->set_status('on-hold');
                 $order->save();
             } else {
-                $order->add_order_note(sprintf("%s Credit Card Payment Failed with message: '%s'", 'Openpay_Cards', 'Status ' . $charge->status));
+                $order->add_order_note(sprintf(" %s - Pago Fallido.  : '%s'", 'Openpay Cards', 'Status ' . $charge->status));
                 $order->set_status('failed');
                 $order->save();
 
@@ -97,7 +103,7 @@ function openpay_woocommerce_confirm()
         } else if ($order && $charge->status == 'completed') {
             $order->payment_complete();
             $woocommerce->cart->empty_cart();
-            $order->add_order_note(sprintf("%s payment completed with Transaction Id of '%s'", 'Openpay_Cards', $charge->id));
+            $order->add_order_note(sprintf("%s - Pago Completado: Transaction Id: '%s'", 'Openpay_Cards', $charge->id));
         }
 
         wp_redirect($openpay_cards->get_return_url($order));
@@ -198,7 +204,6 @@ function openpay_cards_admin_enqueue($hook) {
                 'order_id'      => $order_id,
             )
         );
-
     }
 }
 

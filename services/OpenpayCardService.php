@@ -1,6 +1,8 @@
 <?php
 namespace OpenpayCards\Services;
 
+use Exception;
+use OpenpayCards\Includes\OpenpayErrorHandler;
 use OpenpayCards\Includes\OpenpayUtils;
 use WC_Openpay_Gateway;
 
@@ -48,18 +50,21 @@ class OpenpayCardService extends WC_Openpay_Gateway
 
         $list = array(array('value' => 'new', 'name' => 'Nueva tarjeta'));
         $this->logger->info('WC_Openpay_Cards_Service.getCreditCardList - cards_list ' . Json_encode($list));
-        try {
-            $customer = $this->openpay->customers->get($customer_id);
+        // try {
+            $customer = OpenpayErrorHandler::catchOpenpayError(function () use ($customer_id) {
+               return $customer = $this->openpay->customers->get($customer_id);
+            });
+
             $cards = $this->getCreditCards($customer);
             $this->logger->info('WC_Openpay_Cards_Service.getCreditCardList - cards_list_from_api ' . Json_encode($cards));
             foreach ($cards as $card) {
                 array_push($list, array('value' => $card->id, 'name' => strtoupper($card->brand) . ' ' . $card->card_number));
             }
             return $list;
-        } catch (Exception $e) {
-            $this->logger->error($e->getMessage());
-            return $list;
-        }
+       // } catch (Exception $e) {
+       //     $this->logger->error($e->getMessage());
+       //     return $list;
+       // }
     }
 
     private function getCreditCards($customer)

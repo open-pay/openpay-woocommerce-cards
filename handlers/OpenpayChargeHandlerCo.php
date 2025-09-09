@@ -10,7 +10,7 @@ class OpenpayChargeHandlerCo {
     public function applyPaymentSettings($charge_request,$payment_settings){
 
         // CUOTAS
-        if (isset($payment_settings['openpay_payment_plan'])){
+        if (isset($payment_settings['openpay_payment_plan']) && $payment_settings['openpay_payment_plan'] != 1){
             $charge_request["payment_plan"] = array("payments" => $payment_settings['openpay_payment_plan']);
         }
 
@@ -23,6 +23,11 @@ class OpenpayChargeHandlerCo {
         // SOLO APLICA CARGO DIRECTO (capture=true)
         if (isset($payment_settings['capture'])){
             $charge_request["capture"] = $payment_settings['capture'];
+        }
+
+        // APLICA IVA
+        if (isset($payment_settings['iva']) && $payment_settings['iva'] != 0){
+            $charge_request['iva'] = $payment_settings['iva'];
         }
 
         $this->logger->info("[OpenpayChargeHandlerCo.applyPaymentSettings] => " . json_encode($charge_request) );

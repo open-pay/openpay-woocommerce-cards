@@ -3,7 +3,6 @@ const saveCardAuthComponent = ( props ) => {
 
     const saveCardAuthValidation = (e) => {
             props.setOpenpaySaveCardAuth(!props.openpaySaveCardAuth);
-            console.log(props.openpaySaveCardAuth)
     }
 
     return (

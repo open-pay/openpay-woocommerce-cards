@@ -15,7 +15,7 @@ class OpenpayChargeHandlerMx {
         }
 
         // MSI
-        if (isset($payment_settings['openpay_payment_plan'])){
+        if (isset($payment_settings['openpay_payment_plan']) && $payment_settings['openpay_payment_plan'] != 1){
             $charge_request["payment_plan"] = array("payments" => $payment_settings['openpay_payment_plan']);
         }
 

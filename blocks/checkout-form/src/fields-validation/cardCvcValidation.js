@@ -6,7 +6,6 @@ export const CardCvcValidation = (openpayCardCvc) => {
     }
 
     if(openpayCardCvc.length < 3){
-        console.log(openpayCardCvc.length);
         return 'Número de digitos de CVV incorrectos';
     }
 

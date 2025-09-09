@@ -42,6 +42,7 @@ class OpenpayChargeService
         $charge_request = $this->collectChargeData($payment_settings);
         $this->logger->info('processOpenpayCharge {Charge.TYPE} - ' .$payment_settings['openpay_charge_type']);
         $charge = $this->create($payment_settings['openpay_customer'], $charge_request,$payment_settings['openpay_charge_type']);
+        $this->logger->info('processOpenpayCharge {Charge body} - ' . json_encode($charge));
         $this->logger->info('processOpenpayCharge {Charge.id} - ' . $charge->id);
         $this->logger->info('processOpenpayCharge {Charge.description} - ' . $charge->description);
         if($charge != false ) {
@@ -69,7 +70,6 @@ class OpenpayChargeService
     }
 
     public function create($openpay_customer, $charge_request, $charge_type) {
-        $charge = null;
         try {
             $this->logger->info('wc-openpay-charge-service.create');
             $this->logger->info("[OpenpayChargeService.create - CHARGE_REQUEST] => " . json_encode($charge_request) );
@@ -77,6 +77,7 @@ class OpenpayChargeService
             if (is_user_logged_in()) {
                 $customer_id = $this->order->get_customer_id();
                 $openpay_customer = OpenpayErrorHandler::catchOpenpayError(function () use($openpay_customer, $charge_request, $order_id, $customer_id) {
+
                    return $openpay_customer->charges->create($charge_request);
                 }, $order_id, $customer_id);
                 
@@ -98,8 +99,8 @@ class OpenpayChargeService
                 }
                 $this->order->save();
             }
-
             return $charge;
+
         } catch (Exception $e) {
             $this->logger->error('[ERROR - wc-openpay-charge-service.create] Order => ' . $this->order->get_id());
             $this->logger->error('[ERROR - wc-openpay-charge-service.create] Error => '. $e->getMessage());
