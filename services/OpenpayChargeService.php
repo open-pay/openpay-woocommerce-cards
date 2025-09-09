@@ -73,17 +73,20 @@ class OpenpayChargeService
         try {
             $this->logger->info('wc-openpay-charge-service.create');
             $this->logger->info("[OpenpayChargeService.create - CHARGE_REQUEST] => " . json_encode($charge_request) );
+            $order_id = $this->order->get_id();
             if (is_user_logged_in()) {
-                $charge = OpenpayErrorHandler::catchOpenpayError(function () use($openpay_customer, $charge_request) {
+                $customer_id = $this->order->get_customer_id();
+                $openpay_customer = OpenpayErrorHandler::catchOpenpayError(function () use($openpay_customer, $charge_request, $order_id, $customer_id) {
+
                    return $openpay_customer->charges->create($charge_request);
-                });
+                }, $order_id, $customer_id);
                 
                 $this->logger->info('[wc-openpay-charge-service.create] => charge result=> ' . $charge->id);
             } else {
                 $openpay = $this->openpay;
-                $charge = OpenpayErrorHandler::catchOpenpayError(function () use ($openpay, $charge_request) {
+                $charge = OpenpayErrorHandler::catchOpenpayError(function () use ($openpay, $charge_request, $order_id) {
                     return $openpay->charges->create($charge_request);
-                });
+                }, $order_id);
                 $this->logger->info('[wc-openpay-charge-service.create] => charge result=> ' . $charge->id);
             }
             if($charge !==false){
