@@ -59,9 +59,9 @@ class WC_Openpay_Gateway extends WC_Payment_Gateway
     public function __construct()
     {
         $this->id = 'wc_openpay_gateway'; // payment gateway plugin ID
-        $this->icon = 'https://img.openpay.mx/plugins/openpay_logo.svg'; // URL of the icon that will be displayed on checkout page near your gateway name
         $this->has_fields = true; // in case you need a custom credit card form
-        $this->method_title = 'Openpay Cards';
+        $this->method_title = 'Pago con tarjeta de crédito y débito';
+        $this->title = 'Pago con tarjeta de crédito y débito';
         $this->method_description = 'Provides a credit and debit card payment method with Openpay for WooCommerce.'; // will be displayed on the options page
 
         // Method with all the options fields
@@ -83,6 +83,21 @@ class WC_Openpay_Gateway extends WC_Payment_Gateway
         $this->installments_is_active = 'yes' === $this->get_option('installments_is_active');
         $this->minimum_amount_interest_free = $this->get_option('minimum_amount_interest_free');
         $this->charge_type = $this->country == 'MX' ? $this->get_option('charge_type') : $this->get_option('charge_type_co_pe');
+
+        $images_dir = plugin_dir_url( __FILE__ ).'/assets/images/';
+        switch ($this->country){
+            case 'MX':
+            $this->icon = $images_dir.'credit_cards.png'; // URL of the icon that will be displayed on checkout page near your gateway name
+            break;
+            case 'CO':
+                $this->icon = $images_dir.'credit_cards_co.png'; // URL of the icon that will be displayed on checkout page near your gateway name
+                break;
+            case 'PE':
+                $this->icon = $images_dir.'credit_cards_pe.png'; // URL of the icon that will be displayed on checkout page near your gateway name
+                break;
+        }
+
+
 
         $this->openpay = OpenpayClient::getOpenpayInstance($this->sandbox, $this->merchant_id, $this->private_key, $this->country);
         $this->save_card_mode = $this->get_option('save_card_mode');

@@ -67,11 +67,6 @@
         background-color: #F5F7F9 !important;
     }
 
-
-    #payment .payment_methods li img{
-        max-height:2.618em;
-    }
-
     #openpay_cards{
         overflow: unset !important;
     }
@@ -142,7 +137,7 @@
                 <?php elseif($this->country == 'CO'): ?>
                     <img alt="" src="<?php echo $images_dir ?>credit_cards_co.png" style="float: left !important;">
                 <?php elseif($this->country == 'PE'): ?>
-                    <img alt="" width="200px" src="<?php echo $images_dir ?>credit_cards_pe.png" style="float: left !important; margin-bottom: 10px;">
+                    <img style="max-height:2.618em; float:left;" alt="" width="200px" src="<?php echo $images_dir ?>credit_cards_pe.png" style="float: left !important; margin-bottom: 10px;">
                 <?php endif; ?>
             </div>
             <div style="width: 100%;">
