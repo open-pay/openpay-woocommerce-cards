@@ -17,7 +17,7 @@ http://www.openpay.mx/docs/plugins/woocommerce.html
 
 == Changelog ==
 = 3.0.2 =
-* Enhancement. Ajuste de textos y logos
+* Enhancement. Ajuste de textos , logos y control de excepciones
 = 3.0.1 =
 * Fix. Mantenimientos, configuración IVA Colombia.
 = 3.0.0 =

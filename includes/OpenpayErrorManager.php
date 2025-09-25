@@ -49,8 +49,8 @@ class OpenpayErrorManager {
         3005 => [
             'clientError' => 'La tarjeta fue rechazada.',
             'adjustedError' => 'Tu tarjeta fue rechazada. Por favor intenta con otra.',
-            'orderDetailError' => 'La tarjeta ha sido identificada como una tarjeta robada.',
-            'logError' => 'The card was reported as stolen'
+            'orderDetailError' => 'La tarjeta ha sido rechazada por el sistema antifraude.',
+            'logError' => 'Fraud risk detected by anti-fraud system --- Found in blacklist'
         ],
         3006 => [
             'clientError' => 'La operación no esta permitida para este cliente o esta transacción.',
