@@ -54,6 +54,13 @@ const Form = ( props ) => {
         alignItems: 'center',
         zIndex: 10,
     };
+    const isAddressComplete = (address) => {
+        return Object.values(address).every(value =>
+            value !== undefined &&
+            value !== null &&
+            value.toString().trim() !== ''
+        );
+    };
 
 
     const tokenRequest = async () => {
@@ -63,19 +70,21 @@ const Form = ( props ) => {
             card_number: openpayCardNumber,
             cvv2: openpayCardCvc,
             expiration_month: openpayCardExpiry.substring(0,2),
-            expiration_year: openpayCardExpiry.substring(openpayCardExpiry.length-2),
-            address:{
-                line1:billing.billingAddress.address_1,
-                line2:billing.billingAddress.address_2,
-                state:billing.billingAddress.state,
-                city:billing.billingAddress.city,
-                postal_code:billing.billingAddress.postcode,
-                country_code:billing.billingAddress.country
-            }
+            expiration_year: openpayCardExpiry.substring(openpayCardExpiry.length-2)
         };
-
-
+        const address= {
+            line1:billing.billingAddress.address_1,
+            line2:billing.billingAddress.address_2,
+            state:billing.billingAddress.state,
+            city:billing.billingAddress.city,
+            postal_code:billing.billingAddress.postcode,
+            country_code:billing.billingAddress.country
+        }
+        if(isAddressComplete(address)){
+            data.address = address;
+        }
         const result = await tokenRequestWrapper(data);
+        debugger;
         if(result.data.error_code){
             return {
                 errorCode: result.data.error_code,
