@@ -1,20 +1,18 @@
 <?php
 namespace OpenpayCards\Services;
 
+use Exception;
 use OpenpayCards\Handlers\OpenpayChargeHandlerCo;
 use OpenpayCards\Handlers\OpenpayChargeHandlerMx;
 use OpenpayCards\Handlers\OpenpayChargeHandlerPe;
 use OpenpayCards\Includes\OpenpayErrorHandler;
+use OpenpayCards\Services\PaymentSettings\Openpay3dSecure;
 
 
 // Ensure WordPress functions are available
 if (!defined('ABSPATH')) {
     exit; // Exit if accessed directly
 }
-
-//require_once ABSPATH . 'wp-load.php';
-//require_once ABSPATH . 'wp-Includes/pluggable.php';
-//require_once ABSPATH . 'wp-Includes/user.php'; // Ensure user-related functions are loaded
 
 class OpenpayChargeService
 {
@@ -37,93 +35,110 @@ class OpenpayChargeService
     public function processOpenpayCharge($payment_settings)
     {
 
-        $this->logger->info('processOpenpayCharge');
+        $this->logger->info('[OpenpayChargeService.processOpenpayCharge start]');
 
         $charge_request = $this->collectChargeData($payment_settings);
-        $this->logger->info('processOpenpayCharge {Charge.TYPE} - ' .$payment_settings['openpay_charge_type']);
+        $this->logger->info('[OpenpayChargeService.processOpenpayCharge] {Charge.TYPE} - ' .$payment_settings['openpay_charge_type']);
         $charge = $this->create($payment_settings['openpay_customer'], $charge_request,$payment_settings['openpay_charge_type']);
-        $this->logger->info('processOpenpayCharge {Charge body} - ' . json_encode($charge));
-        $this->logger->info('processOpenpayCharge {Charge.id} - ' . $charge->id);
-        $this->logger->info('processOpenpayCharge {Charge.description} - ' . $charge->description);
+        $this->logger->info('[OpenpayChargeService.processOpenpayCharge] {Charge body} - ' . json_encode($charge));
+        $this->logger->info('[OpenpayChargeService.processOpenpayCharge] {Charge.id} - ' . $charge->id);
+        $this->logger->info('[OpenpayChargeService.processOpenpayCharge] {Charge.description} - ' . $charge->description);
         if($charge != false ) {
             $this->order->update_meta_data('_transaction_id', $charge->id);
-            $this->logger->info('processOpenpayCharge {Charge.id} - ' . $charge->id);
-            $this->logger->info('processOpenpayCharge {Charge.description} - ' . $charge->description);
+            $this->logger->info('[OpenpayChargeService.processOpenpayCharge] {Charge.id} - ' . $charge->id);
+            $this->logger->info('[OpenpayChargeService.processOpenpayCharge] {Charge.description} - ' . $charge->description);
 
             if($payment_settings['sandbox'] && is_user_logged_in()){
                 $this->order->update_meta_data('_openpay_customer_sandbox_id',$charge->customer_id);
-                $this->logger->info('Update metadata customer Sandbox ' . $charge->customer_id);
+                $this->logger->info('[OpenpayChargeService.processOpenpayCharge] => Update metadata customer Sandbox ' . $charge->customer_id);
             } else if (!$payment_settings['sandbox'] && is_user_logged_in()){
                 $this->order->update_meta_data('_openpay_customer_id',$charge->customer_id);
-                $this->logger->info('Update metadata customer Live ' . $charge->customer_id);
+                $this->logger->info('[OpenpayChargeService.processOpenpayCharge] => Update metadata customer Live ' . $charge->customer_id);
             }
 
             if($charge_request['capture'] === false && $charge->status == 'in_progress'){
                 $captureString = ($this->capture) ? 'true' : 'false';
-                $this->logger->info('Order:' . $this->order->get_id() . ' Set as preauthorized');
+                $this->logger->info('[OpenpayChargeService.processOpenpayCharge] => Order:' . $this->order->get_id() . ' Set as preauthorized');
                 $this->order->update_meta_data('_openpay_capture', $captureString);
             }
             $this->order->save();
         }
-
+        $this->logger->info('[OpenpayChargeService.processOpenpayCharge end]');
         return $charge;
     }
 
     public function create($openpay_customer, $charge_request, $charge_type) {
         try {
-            $this->logger->info('wc-openpay-charge-service.create');
+            $this->logger->info('[OpenpayChargeService.create] start');
             $this->logger->info("[OpenpayChargeService.create - CHARGE_REQUEST] => " . json_encode($charge_request) );
             $order_id = $this->order->get_id();
+
             if (is_user_logged_in()) {
                 $customer_id = $this->order->get_customer_id();
-                $openpay_customer = OpenpayErrorHandler::catchOpenpayError(function () use($openpay_customer, $charge_request, $order_id, $customer_id) {
-
+                $charge = OpenpayErrorHandler::catchOpenpayError(function () use($openpay_customer, $charge_request, $order_id, $customer_id) {
                    return $openpay_customer->charges->create($charge_request);
                 }, $order_id, $customer_id);
-                
-                $this->logger->info('[wc-openpay-charge-service.create] => charge result=> ' . $charge->id);
             } else {
                 $openpay = $this->openpay;
                 $charge = OpenpayErrorHandler::catchOpenpayError(function () use ($openpay, $charge_request, $order_id) {
                     return $openpay->charges->create($charge_request);
                 }, $order_id);
-                $this->logger->info('[wc-openpay-charge-service.create] => charge result=> ' . $charge->id);
             }
+
+            if($charge == 3005) throw new Exception("Fraud risk detected by anti-fraud system --- Found in blacklist", 3005);
+            $this->logger->info('[OpenpayChargeService.create] => charge result ' . $charge->id);
+
             if($charge !==false){
                 if ($charge->payment_method && $charge->payment_method->type == 'redirect') {
-                    $this->logger->info('[wc-openpay-charge-service.create] => UPDATE METADATA payment_method->url)');
+                    $this->logger->info('[OpenpayChargeService.create] => UPDATE METADATA payment_method->url)');
                     $this->order->update_meta_data('_openpay_3d_secure_url', $charge->payment_method->url);
                     $this->order->set_status('on-hold');
                 }else{
                     $this->order->delete_meta_data('_openpay_3d_secure_url');
                 }
+                $this->logger->info('[OpenpayChargeService.create] => UpdateStatus on-hold');
                 $this->order->save();
             }
             return $charge;
 
         } catch (Exception $e) {
-            $this->logger->error('[ERROR - wc-openpay-charge-service.create] Order => ' . $this->order->get_id());
-            $this->logger->error('[ERROR - wc-openpay-charge-service.create] Error => '. $e->getMessage());
+            $this->logger->error('[ERROR - OpenpayChargeService.create] Order => ' . $this->order->get_id());
+            $this->logger->error('[ERROR - OpenpayChargeService.create] Error => '. $e->getMessage());
 
             $this->logger->error('[Charge type exception => '. $charge_type);
             $this->logger->error('[Code exception => '. $e->getCode());
-            $this->logger->error('[Redirect url => '. $this->redirect_url_3d());
 
             // Si cuenta con autenticación selectiva y hay detección de fraude se envía por 3D Secure
             if ($charge_type == 'auth' && $e->getCode() == '3005') {
+                $openpay3ds = new Openpay3dSecure();
+                $redirect_url = $openpay3ds->redirect_url_3d();
                 $charge_request['use_3d_secure'] = true;
-                $charge_request['redirect_url'] =$this->redirect_url_3d();
-                $charge = $openpay_customer->charges->create($charge_request);
-                
+                $charge_request['redirect_url'] = $redirect_url;
 
-                $this->logger->info('createOpenpayCharge Auth Order => '.$this->order->get_id());
+                $this->logger->error('[[OpenpayChargeService.create] Redirect url => '. $redirect_url);
+
+                $this->logger->error('[[OpenpayChargeService.create] => 3DSecure Selectivo start');
+                if (is_user_logged_in()) {
+                    $charge = OpenpayErrorHandler::catchOpenpayError(function () use($openpay_customer, $charge_request, $order_id, $customer_id) {
+                        return $openpay_customer->charges->create($charge_request);
+                    }, $order_id, $customer_id);
+                } else {
+                    $openpay = $this->openpay;
+                    $charge = OpenpayErrorHandler::catchOpenpayError(function () use ($openpay, $charge_request, $order_id) {
+                        return $openpay->charges->create($charge_request);
+                    }, $order_id);
+                }
+                $this->logger->error('[[OpenpayChargeService.create] => 3DSecure Selectivo end');
+                
+                if ($charge == 3005) return false;
+                $this->logger->info('[OpenpayChargeService.create] => Auth Order => '.$this->order->get_id());
 
                 if ($charge->payment_method && $charge->payment_method->type == 'redirect') {
-                    $this->logger->info('createOpenpayCharge update_order_meta_data => '.$charge->payment_method->url);
+                    $this->logger->info('[OpenpayChargeService.create] => update_order_meta_data '.$charge->payment_method->url);
                     $this->order->update_meta_data('_openpay_3d_secure_url', $charge->payment_method->url);
                     $this->order->save(); // ¡Importante! Guardar los cambios
                     $redirect_url_meta = $this->order->get_meta('_openpay_3d_secure_url');
-                    $this->logger->info('get update_order_meta_data => ' . $redirect_url_meta);
+                    $this->logger->info('[OpenpayChargeService.create] => get update_order_meta_data ' . $redirect_url_meta);
                 }else{
                     $this->order->delete_meta_data('_openpay_3d_secure_url');
                 }
@@ -134,27 +149,13 @@ class OpenpayChargeService
             return false;
         }
 
-
-        /* $this->logger->info('wc-openpay-charge-service.create');
-         try {
-             $charge = $openpay_customer->charges->create($charge_request);
-             return $charge;
-         }/*catch (OpenpayApiRequestError $e){
-             $this->logger->error('[ERROR - wc-openpay-charge-service.create] Error => '. $e);
-         }*/
-        /*catch (Exception $e){
-            $this->logger->error('[ERROR - wc-openpay-charge-service.create] Order => '.$this->order->get_id());
-            // $this->logger->error('[ERROR - wc-openpay-charge-service.create] Error => '. json_encode($e)); is not working.
-            $this->logger->error('[ERROR - wc-openpay-charge-service.create] Error => '. $e->getMessage());
-            //throw new Exception('Oopsie');
-        }
-        */
+        $this->logger->info('[OpenpayChargeService.processOpenpayCharge.create] end');
         return $charge;
     }
 
     private function collectChargeData($payment_settings)
     {
-
+        $this->logger->info('[OpenpayChargeService.collectChargeData] start');
         $charge_request = array(
             "method" => "card",
             "amount" => number_format((float)$this->order->get_total(), 2, '.', ''),
@@ -183,6 +184,7 @@ class OpenpayChargeService
         }
 
         $this->logger->info('[OpenpayChargeService.collectChargeData]' . json_encode($charge_request));
+        $this->logger->info('[OpenpayChargeService.collectChargeData] end');
         return $charge_request;
     }
 
