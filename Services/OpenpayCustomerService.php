@@ -17,26 +17,29 @@ Class OpenpayCustomerService{
     }
 
     public function retrieveCustomer($order){
+        $this->logger->info('[OpenpayCustomerService.retrieveCustomer] start ');
         $customer_id = $this->getCustomerId();
         try { 
             if (OpenpayUtils::isNullOrEmptyString($customer_id)) {
-                $this->logger->info('(retrieveCustomer) customer_id not exists - ' . $customer_id);
+                $this->logger->info('[OpenpayCustomerService.retrieveCustomer] => customer_id not exists - ' . $customer_id);
                 if (is_user_logged_in()) {
                     return $this->create($order);
                 }
             }else{
-                $this->logger->info('(retrieveCustomer) customer_id exists - ' . $customer_id);
+                $this->logger->info('[OpenpayCustomerService.retrieveCustomer] => customer_id exists - ' . $customer_id);
                 return $this->openpay->customers->get($customer_id);
             } 
         } catch (Exception $e) {
             //$this->error($e);
             return false;
         }
+        $this->logger->info('[OpenpayCustomerService.retrieveCustomer] end ');
     }
 
     public function getCustomerId() {
+        $this->logger->info('[OpenpayCustomerService.getCustomerId] start ');
         $customer_id = null;
-        $this->logger->info('(getCustomerId) sandbox? - ' . $this->sandbox);
+        $this->logger->info('[OpenpayCustomerService.getCustomerId] => sandbox? - ' . $this->sandbox);
         if (is_user_logged_in()) {
             if ($this->sandbox) {
                 $customer_id = get_user_meta(get_current_user_id(), '_openpay_customer_test_id', true);
@@ -44,32 +47,37 @@ Class OpenpayCustomerService{
                 $customer_id = get_user_meta(get_current_user_id(), '_openpay_customer_live_id', true);
             }            
         }
-        $this->logger->info('(getCustomerId) customer_id_test - ' . get_user_meta(get_current_user_id(), '_openpay_customer_test_id', true) );
-        $this->logger->info('(getCustomerId) customer_id_live - ' . get_user_meta(get_current_user_id(), '_openpay_customer_live_id', true) );
+        $this->logger->info('[OpenpayCustomerService.getCustomerId] => customer_id_test - ' . get_user_meta(get_current_user_id(), '_openpay_customer_test_id', true) );
+        $this->logger->info('[OpenpayCustomerService.getCustomerId] => customer_id_live - ' . get_user_meta(get_current_user_id(), '_openpay_customer_live_id', true) );
+        $this->logger->info('[OpenpayCustomerService.getCustomerId] end ');
         return $customer_id; 
     }
 
     public function updateCustomerId($customer_id){
+        $this->logger->info('[OpenpayCustomerService.updateCustomerId] start ');
         if (is_user_logged_in()) {
+            $this->logger->info('[OpenpayCustomerService.updateCustomerId] => update_user_meta ');
             if ($this->sandbox) {
                 update_user_meta(get_current_user_id(), '_openpay_customer_test_id', $customer_id);
             } else {
                 update_user_meta(get_current_user_id(), '_openpay_customer_live_id', $customer_id);
             }                
         }
+        $this->logger->info('[OpenpayCustomerService.updateCustomerId] end ');
     }
 
 
     public function create($order) {
+        $this->logger->info('[OpenpayCustomerService.create] start ');
         $customer_data = $this->collectCustomerData($order);
-        $this->logger->info('(create) customer_data - ' . json_encode($customer_data));
+        $this->logger->info('[OpenpayCustomerService.create] => customer_data - ' . json_encode($customer_data));
         try {
             $customer = $this->openpay->customers->add($customer_data);
-            $this->logger->info('customer_id - ' . $customer->id); 
+            $this->logger->info('[OpenpayCustomerService.create] => customer_id - ' . $customer->id); 
             $this->updateCustomerId($customer->id);
            
-            $this->logger->info('customer_data - ' . $customer_data); 
-            $this->logger->info('customer_id - ' . $customer->id); 
+            $this->logger->info('[OpenpayCustomerService.create] => customer_data - ' . $customer_data); 
+            $this->logger->info('[OpenpayCustomerService.create] => customer_id - ' . $customer->id); 
 
             return $customer;
 
@@ -77,12 +85,13 @@ Class OpenpayCustomerService{
             //$this->error($e);
             return false;
         }
+        $this->logger->info('[OpenpayCustomerService.create] end ');
     }
 
     
 
     public function collectCustomerData($order) {
-
+        $this->logger->info('[OpenpayCustomerService.collectCustomerData] start ');
         $customer_data = array(            
             'name' => $order->get_billing_first_name(),
             'last_name' => $order->get_billing_last_name(),
@@ -94,10 +103,11 @@ Class OpenpayCustomerService{
         if ($this->hasAddress($order)) {
             $customer_data = $this->formatAddress($customer_data, $order);
         }
-        
+        $this->logger->info('[OpenpayCustomerService.collectCustomerData] end ');
         return $customer_data;
     }
     private function formatAddress($customer_data, $order) {
+        $this->logger->info('[OpenpayCustomerService.formatAddress] start ');
         if ($this->country === 'MX' || $this->country === 'PE') {
             $customer_data['address'] = array(
                 'line1' => substr($order->get_billing_address_1(), 0, 200),
@@ -114,13 +124,19 @@ Class OpenpayCustomerService{
                 'additional' => substr($order->get_billing_address_1(), 0, 200).' '.substr($order->get_billing_address_2(), 0, 50)
             );
         }
-
+        $this->logger->info('[OpenpayCustomerService.formatAddress] => customer_data ' . json_encode($customer_data));
+        $this->logger->info('[OpenpayCustomerService.formatAddress] end ');
         return $customer_data;
     }
     public function hasAddress($order) {
+        $this->logger->info('[OpenpayCustomerService.formatAddress] start ');
         if($order->get_billing_address_1() && $order->get_billing_state() && $order->get_billing_postcode() && $order->get_billing_country() && $order->get_billing_city()) {
+            $this->logger->info('[OpenpayCustomerService.formatAddress] validAddress');
+            $this->logger->info('[OpenpayCustomerService.formatAddress] end ');
             return true;
         }
+        $this->logger->info('[OpenpayCustomerService.formatAddress] invalidAddress');
+        $this->logger->info('[OpenpayCustomerService.formatAddress] end ');
         return false;
     }
 
