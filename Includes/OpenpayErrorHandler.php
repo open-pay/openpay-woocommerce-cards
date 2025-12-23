@@ -70,7 +70,8 @@ class OpenpayErrorHandler {
             throw new Exception($errorMessage['clientError'], $e->getCode());  // ** SE CREA UNA EXCEPCION PERSONALIZADA PRESERVANDO EL CODE DE LA EXCEPCION ORIGINAL
         } catch (OpenpayApiTransactionError $e) {
             self::handleOpenpayPluginException($e, $order_id, $customer_id);
-             $openpayErrorManager = new OpenpayErrorManager();
+            if($e->getCode() == '3005') return 3005;
+            $openpayErrorManager = new OpenpayErrorManager();
             $errorMessage = $openpayErrorManager::getErrorMessages($e->getCode());
             throw new Exception($errorMessage['clientError'], $e->getCode());
         } catch (OpenpayApiError $e) {

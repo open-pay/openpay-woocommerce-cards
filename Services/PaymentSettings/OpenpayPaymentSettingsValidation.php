@@ -41,6 +41,7 @@ Class OpenpayPaymentSettingsValidation extends WC_Openpay_Gateway{
     public function validateOpenpayCurrencies(){
         $allowedCurrencies = $this->getCurrencies($this->country);
         if(!in_array(get_woocommerce_currency(), $allowedCurrencies)){
+            $this->enabled = false;
             $this->settings->add_error('Openpay Cards Plugin ' . OpenpayUtils::getCountryName($this->country) .
                 ' is only available for ' . implode(", ", $allowedCurrencies) . ' currencies.' );
         }

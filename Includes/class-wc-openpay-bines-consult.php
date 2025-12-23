@@ -9,7 +9,7 @@ class WC_Openpay_Bines_Consult {
         global $woocommerce;
 
         $logger     = wc_get_logger();
-        $logger->info("Entra a los bines");
+        $logger->info("[WC_Openpay_Bines_Consult.getTypeCardOpenpay] start");
         $card_bin   = isset( $_POST['card_bin'] ) ? $_POST['card_bin'] : false;
         $logger->info("Bin: " . $card_bin);
         if($card_bin) {
@@ -64,12 +64,13 @@ class WC_Openpay_Bines_Consult {
                 }
 
             } catch (Exception $e) {
-                $logger->error($e->getMessage());
+                $logger->error('[WC_Openpay_Bines_Consult.getTypeCardOpenpay => ERROR ]'.$e->getMessage());
             }
         }
         wp_send_json(array(
             'status' => 'error',
             'card_type' => "credit card not found"
         ));
+        $logger->info("[WC_Openpay_Bines_Consult.getTypeCardOpenpay] end");
     }
 }
