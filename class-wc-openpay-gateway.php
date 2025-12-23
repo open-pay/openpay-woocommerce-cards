@@ -70,9 +70,15 @@ class WC_Openpay_Gateway extends WC_Payment_Gateway
         $this->init_settings();
         // Load WC logger
         $this->logger = wc_get_logger();
+        $this->country = $this->get_option('country');
+
+        // Disable Plugin if Currency is not supported by Country.
+        $allowedCurrencies = OpenpayPaymentSettingsValidation::getCurrencies($this->country);
+        if (!in_array(get_woocommerce_currency(), $allowedCurrencies)) {
+            $this->update_option('enabled','0');
+        }
 
         $this->enabled = $this->get_option('enabled');
-        $this->country = $this->get_option('country');
         $this->sandbox = 'yes' === $this->get_option('sandbox');
         $this->merchant_id = $this->sandbox ? $this->get_option('test_merchant_id') : $this->get_option('live_merchant_id');
         $this->private_key = $this->sandbox ? $this->get_option('test_private_key') : $this->get_option('live_private_key');
@@ -137,8 +143,7 @@ class WC_Openpay_Gateway extends WC_Payment_Gateway
                 'default' => 'MX',
                 'options' => array(
                     'MX' => 'México',
-                    'CO' => 'Colombia',
-                    'PE' => 'Perú'
+                    'CO' => 'Colombia'
                 )
             ),
             'sandbox' => array(

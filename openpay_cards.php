@@ -17,15 +17,14 @@
 * 
 * Openpay Docs: http://www.openpay.mx/docs/
 */
+use Automattic\WooCommerce\Internal\DataStores\Orders\CustomOrdersTableController;
+use Openpay\Resources\OpenpayCard;
+use OpenpayCards\Includes\OpenpayClient;
 
  /*
  * This action hook registers WC_Openpay_Gateway class as a WooCommerce payment gateway
  */
 add_filter( 'woocommerce_payment_gateways', 'openpay_add_gateway_class' );
-
-use Automattic\WooCommerce\Internal\DataStores\Orders\CustomOrdersTableController;
-use Openpay\Resources\OpenpayCard;
-use OpenpayCards\Includes\OpenpayClient;
 
 /*
  * WC_Openpay_Gateway Class file is called by openpay_init_gateway function
@@ -121,25 +120,30 @@ function openpay_woocommerce_confirm()
     $logger->info('[WC_Openpay_3d_secure.openpay_woocommerce_confirm] => end');
 }
 function wc_custom_redirect_after_purchase() {
-    global $wp;
-    $logger = wc_get_logger();
-    $logger->info('[openpay_cards.wc_custom_redirect_after_purchase] => start');
-    if (is_checkout() && !empty($wp->query_vars['order-received'])) {
-        $order = new WC_Order($wp->query_vars['order-received']);
-        $redirect_url = $order->get_meta('_openpay_3d_secure_url');
-        $logger->debug('[WC_Openpay_3d_secure.wc_custom_redirect_after_purchase] => wc_custom_redirect_after_purchase ');
-        $logger->debug('[WC_Openpay_3d_secure.wc_custom_redirect_after_purchase] => 3DS_redirect_url : ' .  $redirect_url);
-        $logger->debug('[WC_Openpay_3d_secure.wc_custom_redirect_after_purchase] => order_status : ' .  $order->get_status());
+    global $woocommerce;
+    $gateways = $woocommerce->payment_gateways->payment_gateways();
+    $gateway = $gateways[ 'wc_openpay_gateway' ];
+    if ($gateway->enabled === 'yes') {
+        global $wp;
+        $logger = wc_get_logger();
+        $logger->info('[openpay_cards.wc_custom_redirect_after_purchase] => start');
+        if (is_checkout() && !empty($wp->query_vars['order-received'])) {
+            $order = new WC_Order($wp->query_vars['order-received']);
+            $redirect_url = $order->get_meta('_openpay_3d_secure_url');
+            $logger->debug('[WC_Openpay_3d_secure.wc_custom_redirect_after_purchase] => wc_custom_redirect_after_purchase ');
+            $logger->debug('[WC_Openpay_3d_secure.wc_custom_redirect_after_purchase] => 3DS_redirect_url : ' . $redirect_url);
+            $logger->debug('[WC_Openpay_3d_secure.wc_custom_redirect_after_purchase] => order_status : ' . $order->get_status());
 
-        if ($redirect_url && $order->get_status() != 'processing') {
-            $order->delete_meta_data('_openpay_3d_secure_url');
-            $order->save();
-            $logger->debug('[WC_Openpay_3d_secure.wc_custom_redirect_after_purchase] => order not processed redirect_url : ' . $redirect_url);
-            wp_redirect($redirect_url);
-            exit();
+            if ($redirect_url && $order->get_status() != 'processing') {
+                $order->delete_meta_data('_openpay_3d_secure_url');
+                $order->save();
+                $logger->debug('[WC_Openpay_3d_secure.wc_custom_redirect_after_purchase] => order not processed redirect_url : ' . $redirect_url);
+                wp_redirect($redirect_url);
+                exit();
+            }
         }
+        $logger->info('[WC_Openpay_3d_secure.wc_custom_redirect_after_purchase] => end');
     }
-    $logger->info('[WC_Openpay_3d_secure.wc_custom_redirect_after_purchase] => end');
 }
 /*3DS FUNCTION END*/
 
@@ -173,6 +177,10 @@ function openpay_init_gateway() {
 	/*if(!class_exists('Openpay3dSecure')) {
     	require_once(dirname(__FILE__) . "/Services/PaymentSettings/Openpay3dSecure.php");
 	}*/
+}
+
+function openpay_cards_thankyou_template( $template, $template_file, $template_path ) {
+
 }
 
 function openpay_cards_admin_enqueue($hook) {
@@ -257,13 +265,18 @@ function get_type_card_openpay() {
 }
 
 function openpay_woocommerce_order_status_change_custom($order_id, $old_status, $new_status) {
-    $logger = wc_get_logger();
-    $logger->info('[openpay_cards.openpay_woocommerce_order_status_change_custom] => start');
-	$openpay_gateway = new WC_Openpay_Gateway();
-	$openpayInstance = $openpay_gateway->getOpenpayInstance();
-    $capture_service = new WC_Openpay_Capture_Service($openpay_gateway->settings['sandbox'], $openpay_gateway->settings['country'], $openpayInstance);
-	$capture_service->openpayWoocommerceOrderStatusChangeCustom( $order_id, $old_status, $new_status );
-    $logger->info('[openpay_cards.openpay_woocommerce_order_status_change_custom] => end');
+    global $woocommerce;
+    $gateways = $woocommerce->payment_gateways->payment_gateways();
+    $gateway = $gateways[ 'wc_openpay_gateway' ];
+    if ($gateway->enabled === 'yes'){
+        $logger = wc_get_logger();
+        $logger->info('[openpay_cards.openpay_woocommerce_order_status_change_custom] => start');
+        $openpay_gateway = new WC_Openpay_Gateway();
+        $openpayInstance = $openpay_gateway->getOpenpayInstance();
+        $capture_service = new WC_Openpay_Capture_Service($openpay_gateway->settings['sandbox'], $openpay_gateway->settings['country'], $openpayInstance);
+        $capture_service->openpayWoocommerceOrderStatusChangeCustom( $order_id, $old_status, $new_status );
+        $logger->info('[openpay_cards.openpay_woocommerce_order_status_change_custom] => end');
+    }
 }
 
 function add_partial_capture_toggle( $order ) {
