@@ -12,7 +12,7 @@ use OpenpayCards\Services\PaymentSettings\Openpay3dSecure;
 
 /* AUTOLOADER */
 spl_autoload_register(function ($class_name) {
-    if ( false === strpos( $class_name, 'OpenpayCards' ) ) {
+    if (false === strpos($class_name, 'OpenpayCards')) {
         return;
     }
 
@@ -75,7 +75,7 @@ class WC_Openpay_Gateway extends WC_Payment_Gateway
         // Disable Plugin if Currency is not supported by Country.
         $allowedCurrencies = OpenpayPaymentSettingsValidation::getCurrencies($this->country);
         if (!in_array(get_woocommerce_currency(), $allowedCurrencies)) {
-            $this->update_option('enabled','0');
+            $this->update_option('enabled', '0');
         }
 
         $this->enabled = $this->get_option('enabled');
@@ -90,16 +90,16 @@ class WC_Openpay_Gateway extends WC_Payment_Gateway
         $this->minimum_amount_interest_free = $this->get_option('minimum_amount_interest_free');
         $this->charge_type = $this->country == 'MX' ? $this->get_option('charge_type') : $this->get_option('charge_type_co_pe');
 
-        $images_dir = plugin_dir_url( __FILE__ ).'/assets/images/';
-        switch ($this->country){
+        $images_dir = plugin_dir_url(__FILE__) . '/assets/images/';
+        switch ($this->country) {
             case 'MX':
-            $this->icon = $images_dir.'credit_cards.png'; // URL of the icon that will be displayed on checkout page near your gateway name
-            break;
+                $this->icon = $images_dir . 'credit_cards.png'; // URL of the icon that will be displayed on checkout page near your gateway name
+                break;
             case 'CO':
-                $this->icon = $images_dir.'credit_cards_co.png'; // URL of the icon that will be displayed on checkout page near your gateway name
+                $this->icon = $images_dir . 'credit_cards_co.png'; // URL of the icon that will be displayed on checkout page near your gateway name
                 break;
             case 'PE':
-                $this->icon = $images_dir.'credit_cards_pe.png'; // URL of the icon that will be displayed on checkout page near your gateway name
+                $this->icon = $images_dir . 'credit_cards_pe.png'; // URL of the icon that will be displayed on checkout page near your gateway name
                 break;
         }
 
@@ -143,7 +143,8 @@ class WC_Openpay_Gateway extends WC_Payment_Gateway
                 'default' => 'MX',
                 'options' => array(
                     'MX' => 'México',
-                    'CO' => 'Colombia'
+                    'CO' => 'Colombia',
+                    'PE' => 'Perú'
                 )
             ),
             'sandbox' => array(
@@ -288,11 +289,11 @@ class WC_Openpay_Gateway extends WC_Payment_Gateway
      */
     public function payment_fields()
     {
-            // you can instructions for test mode, I mean test card numbers etc.
-            if ($this->sandbox) {
-                $this->description .= 'SANDBOX MODE ENABLED. In test mode, you can use the card number 4111111111111111 with any CVC and a valid expiration date.';
-                $this->description = trim($this->description);
-            }
+        // you can instructions for test mode, I mean test card numbers etc.
+        if ($this->sandbox) {
+            $this->description .= 'SANDBOX MODE ENABLED. In test mode, you can use the card number 4111111111111111 with any CVC and a valid expiration date.';
+            $this->description = trim($this->description);
+        }
 
         $cards_service = new OpenpayCardService();
         $savedCardsList = $cards_service->getCreditCardList();
@@ -301,17 +302,17 @@ class WC_Openpay_Gateway extends WC_Payment_Gateway
         $installments = $OpenpayInstallments->getInstallments();
 
         // I will echo() the form, but you can close PHP tags and print it directly in HTML
-       // echo '<fieldset id=' . esc_attr($this->id) . '-cc-form" class="wc-credit-card-form wc-payment-form" style="background:transparent;">';
+        // echo '<fieldset id=' . esc_attr($this->id) . '-cc-form" class="wc-credit-card-form wc-payment-form" style="background:transparent;">';
 
         // Add this action hook if you want your custom payment gateway to support it
         // do_action('woocommerce_credit_card_form_start', $this->id);
 
-        $images_dir = plugin_dir_url( __FILE__ ).'/assets/images/';
+        $images_dir = plugin_dir_url(__FILE__) . '/assets/images/';
         include_once('templates/payment.php');
 
-       // do_action('woocommerce_credit_card_form_end', $this->id);
+        // do_action('woocommerce_credit_card_form_end', $this->id);
 
-       // echo '<div class="clear"></div></fieldset>';
+        // echo '<div class="clear"></div></fieldset>';
     }
 
     /*
@@ -343,8 +344,6 @@ class WC_Openpay_Gateway extends WC_Payment_Gateway
             'sandbox' => $this->sandbox,
             'country' => $this->country,
             'installments' => $OpenpayInstallments->getInstallments(),
-            'bootstrap_css' => plugins_url('assets/css/bootstrap.css', __FILE__),
-            'bootstrap_js' => plugins_url('assets/js/bootstrap.js', __FILE__),
             'ajaxurl' => admin_url('admin-ajax.php'),
             'save_cc_option' => $this->save_card_mode,
             'use_card_points' => $this->card_points
@@ -373,22 +372,22 @@ class WC_Openpay_Gateway extends WC_Payment_Gateway
     public function process_payment($order_id)
     {
         $this->logger->info("[WC_Openpay_Gateway.process_payment start]");
-        
-        $this->logger->info("[WC_Openpay_Gateway.process_payment => openpay_month_interest_free ]".$_POST['openpay_month_interest_free']);
-        
+
+        $this->logger->info("[WC_Openpay_Gateway.process_payment => openpay_month_interest_free ]" . $_POST['openpay_month_interest_free']);
+
         $cvv = isset($_POST['openpay_card_cvc']) && $_POST['openpay_card_cvc'] ?: $_POST['openpay-card-cvc'];
         $openpay_save_card_auth = isset($_POST['openpay_save_card_auth']) ? $_POST['openpay_save_card_auth'] : null;
         $openpay_payment_plan = isset($_POST['openpay_selected_installment']) ? $_POST['openpay_selected_installment'] : null;
         $openpay_has_interest_pe = isset($_POST['openpay_has_interest_pe']) ? $_POST['openpay_has_interest_pe'] : null;
-         
+
         $openpay_token = $_POST['openpay_token'];
         $device_session_id = $_POST['device_session_id'];
         $openpay_tokenized_card = $_POST['openpay_tokenized_card'];
         $openpay_selected_card = $_POST['openpay_selected_card'];
         $openpay_card_points_confirm = $_POST['openpay_card_points_confirm'];
 
-        if ($openpay_payment_plan != null){
-            $this->logger->info("[WC_Openpay_Gateway.process_payment] => openpay_payment_plan " . json_encode($_POST['openpay_selected_installment']) );
+        if ($openpay_payment_plan != null) {
+            $this->logger->info("[WC_Openpay_Gateway.process_payment] => openpay_payment_plan " . json_encode($_POST['openpay_selected_installment']));
             switch ($this->country) {
                 case 'MX':
                     $openpay_payment_plan = $_POST['openpay_month_interest_free'];
@@ -443,13 +442,13 @@ class WC_Openpay_Gateway extends WC_Payment_Gateway
             'iva' => $this->iva
         );
 
-        $this->logger->info("[WC_Openpay_Gateway.process_payment] => Payment Settings " . json_encode($payment_settings) );
+        $this->logger->info("[WC_Openpay_Gateway.process_payment] => Payment Settings " . json_encode($payment_settings));
 
         $charge_service = new OpenpayChargeService($this->openpay, $order, $customer_service, $this->capture);
         $charge = $charge_service->processOpenpayCharge($payment_settings);
 
         if ($charge != null && $charge !== false) {
-            $this->logger->info("[WC_Openpay_Gateway.process_payment] => Charge Openpay " . json_encode($charge) );
+            $this->logger->info("[WC_Openpay_Gateway.process_payment] => Charge Openpay " . json_encode($charge));
             $redirect_url = $charge->payment_method->url;
             // Si el redirect url no existe el cargo es inmediato
             if (!$redirect_url && $this->capture) {
@@ -517,7 +516,7 @@ class WC_Openpay_Gateway extends WC_Payment_Gateway
     private function cvvValidation($openpay_token, $openpay_customer, $cvv)
     {
         $this->logger->info("[WC_Openpay_Gateway.cvvValidation start]");
-        $cvv = (int)$cvv;
+        $cvv = (int) $cvv;
         if (is_numeric($cvv) && (strlen($cvv) == 3 || strlen($cvv) == 4)) {
             $path = sprintf('/%s/customers/%s/cards/%s', $this->merchant_id, $openpay_customer->id, $openpay_token);
             $params = array('cvv2' => $cvv);
@@ -537,7 +536,7 @@ class WC_Openpay_Gateway extends WC_Payment_Gateway
             $this->logger->error('[WC_Openpay_Gateway.cvvValidation] => CVV is not valid');
             throw new Exception("Error en la transacción: No se pudo completar tu pago.");
         }
-         $this->logger->info("[WC_Openpay_Gateway.cvvValidation end]");
+        $this->logger->info("[WC_Openpay_Gateway.cvvValidation end]");
     }
 
     public function process_admin_options()
