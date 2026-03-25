@@ -373,11 +373,10 @@ class WC_Openpay_Gateway extends WC_Payment_Gateway
     {
         $this->logger->info("[WC_Openpay_Gateway.process_payment start]");
 
-        $this->logger->info("[WC_Openpay_Gateway.process_payment => openpay_month_interest_free ]" . $_POST['openpay_month_interest_free']);
+        $this->logger->info("[WC_Openpay_Gateway.process_payment => openpay_month_interest_free ]" . ($_POST['openpay_month_interest_free'] ?? 'N/A'));
 
         $cvv = isset($_POST['openpay_card_cvc']) && $_POST['openpay_card_cvc'] ?: $_POST['openpay-card-cvc'];
         $openpay_save_card_auth = isset($_POST['openpay_save_card_auth']) ? $_POST['openpay_save_card_auth'] : null;
-        $openpay_payment_plan = isset($_POST['openpay_selected_installment']) ? $_POST['openpay_selected_installment'] : null;
         $openpay_has_interest_pe = isset($_POST['openpay_has_interest_pe']) ? $_POST['openpay_has_interest_pe'] : null;
 
         $openpay_token = $_POST['openpay_token'];
@@ -386,20 +385,35 @@ class WC_Openpay_Gateway extends WC_Payment_Gateway
         $openpay_selected_card = $_POST['openpay_selected_card'];
         $openpay_card_points_confirm = $_POST['openpay_card_points_confirm'];
 
-        if ($openpay_payment_plan != null) {
-            $this->logger->info("[WC_Openpay_Gateway.process_payment] => openpay_payment_plan " . json_encode($_POST['openpay_selected_installment']));
+        // Read installment value: Blocks checkout sends 'openpay_selected_installment',
+        // Classic checkout sends country-specific field names.
+        $openpay_payment_plan = null;
+
+        if (isset($_POST['openpay_selected_installment']) && $_POST['openpay_selected_installment'] > 0) {
+            // Blocks checkout path
+            $openpay_payment_plan = intval($_POST['openpay_selected_installment']);
+        } else {
+            // Classic checkout path: read from country-specific field
             switch ($this->country) {
                 case 'MX':
-                    $openpay_payment_plan = $_POST['openpay_month_interest_free'];
+                    if (isset($_POST['openpay_month_interest_free']) && $_POST['openpay_month_interest_free'] > 1) {
+                        $openpay_payment_plan = intval($_POST['openpay_month_interest_free']);
+                    }
                     break;
                 case 'CO':
-                    $openpay_payment_plan = $_POST['openpay_installments'];
+                    if (isset($_POST['openpay_installments']) && $_POST['openpay_installments'] > 1) {
+                        $openpay_payment_plan = intval($_POST['openpay_installments']);
+                    }
                     break;
                 case 'PE':
-                    $openpay_payment_plan = $_POST['openpay_installments_pe'];
+                    if (isset($_POST['openpay_installments_pe']) && $_POST['openpay_installments_pe'] > 1) {
+                        $openpay_payment_plan = intval($_POST['openpay_installments_pe']);
+                    }
                     break;
             }
         }
+
+        $this->logger->info("[WC_Openpay_Gateway.process_payment] => openpay_payment_plan " . json_encode($openpay_payment_plan));
 
         $this->logger->info('[WC_Openpay_Gateway.process_payment] => openpay_tokenized_card ' . json_encode($openpay_tokenized_card));
 
