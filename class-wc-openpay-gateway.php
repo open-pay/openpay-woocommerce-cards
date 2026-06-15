@@ -268,11 +268,13 @@ class WC_Openpay_Gateway extends WC_Payment_Gateway
                 'default' => 'no'
             ),
             'iva' => array(
-                'type' => 'number',
+                'type' => 'checkbox',
                 'required' => true,
                 'title' => __('IVA', 'woothemes'),
+                'label' => __('Habilitar', 'woothemes'),
+                'description' => __('Habilitar campo de IVA', 'woocommerce'),
+                'desc_tip' => true,
                 'default' => '0',
-                'id' => 'openpay_show_iva',
             ),
             // Monto minimo para meses sin intereses solo MX
             'minimum_amount_interest_free' => array(

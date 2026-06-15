@@ -172,7 +172,7 @@ class OpenpayChargeService
                 $charge_request = (new OpenpayChargeHandlerMx)->applyPaymentSettings($charge_request,$payment_settings);
                 break;
             case 'CO':
-                $charge_request = (new OpenpayChargeHandlerCo)->applyPaymentSettings($charge_request,$payment_settings);
+                $charge_request = (new OpenpayChargeHandlerCo)->applyPaymentSettings($charge_request,$payment_settings,$this->order);
                 break;
             case 'PE':
                 $charge_request = (new OpenpayChargeHandlerPe)->applyPaymentSettings($charge_request,$payment_settings);

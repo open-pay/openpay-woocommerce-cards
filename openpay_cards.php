@@ -67,6 +67,12 @@ add_action('before_woocommerce_init', function () {
 add_action('woocommerce_api_openpay_confirm', 'openpay_woocommerce_confirm', 10, 0);
 add_action('template_redirect', 'wc_custom_redirect_after_purchase', 0);
 
+/*Campo de IVA personalizado*/
+    // Mostrar el campo personalizado en la pestaña "General" bajo los precios
+    add_action( 'woocommerce_product_options_pricing', 'mostrar_IVA_producto' );
+    // Guardar el valor del campo cuando se actualiza el producto
+    add_action( 'woocommerce_process_product_meta', 'guardar_IVA_producto' );
+
 function openpay_woocommerce_confirm()
 {
     global $woocommerce;
@@ -310,4 +316,98 @@ function ajax_capture_handler()
     $capture_service = new WC_Openpay_Capture_Service($openpay_gateway->settings['sandbox'], $openpay_gateway->settings['country'], $openpayInstance);
     $capture_service->ajaxCaptureHandler();
     $logger->info('[openpay_cards.ajax_capture_handler] => end');
+}
+
+function mostrar_IVA_producto() {
+    $openpay_gateway = new WC_Openpay_Gateway();
+    $pasarelas_activas = WC()->payment_gateways->get_available_payment_gateways();
+    if(isset( $pasarelas_activas['wc_openpay_gateway'])) {
+        if ($openpay_gateway->settings['country'] == "CO" && $openpay_gateway->settings['iva'] == "yes") {
+            // Genera un campo de texto con el formato nativo de WooCommerce
+            woocommerce_wp_text_input(array(
+                'id' => 'openpay_taxes_iva', // El ID que usaremos en la base de datos
+                'label' => __('IVA', 'woocommerce'), // Nombre visible
+                'placeholder' => 'Ej. 100.00',
+                'desc_tip' => 'true',
+                'description' => __('Ingresa el monto del IVA.', 'woocommerce')
+            ));
+        }
+    }
+}
+
+function guardar_IVA_producto( $post_id ) {
+    // Verificamos si el campo fue enviado
+    if ( isset( $_POST['openpay_taxes_iva'] ) ) {
+        // Sanitizamos y guardamos el valor
+        $valor = sanitize_text_field( $_POST['openpay_taxes_iva'] );
+        update_post_meta( $post_id, 'openpay_taxes_iva', $valor );
+    }
+}
+
+// Lo añadimos tanto a la página del carrito como a la del checkout
+add_action( 'woocommerce_cart_totals_before_order_total', 'mostrar_iva_checkout' );
+add_action( 'woocommerce_review_order_before_order_total', 'mostrar_iva_checkout' );
+
+function mostrar_iva_checkout() {
+    $iva_total = 0;
+
+    // Recorremos el carrito
+    foreach ( WC()->cart->get_cart() as $cart_item ) {
+        $product_id = $cart_item['product_id'];
+        $cantidad   = $cart_item['quantity'];
+
+        $valor = get_post_meta( $product_id, 'openpay_taxes_iva', true );
+
+        if ( is_numeric( $valor ) ) {
+            $iva_total += ( (float) $valor * $cantidad );
+        }
+    }
+
+    // Dibujamos el renglón si hay un valor que mostrar
+    if ( $iva_total > 0 ) {
+        ?>
+        <tr class="iva">
+            <th><?php _e( 'IVA total', 'woocommerce' ); ?></th>
+            <td data-title="<?php esc_attr_e( 'IVA', 'woocommerce' ); ?>">
+                <?php echo wc_price( $iva_total ); ?>
+            </td>
+        </tr>
+        <?php
+    }
+}
+
+// Mostramos el campo de IVA en checkout (Bloques Gutemberg)
+add_action( 'woocommerce_cart_calculate_fees','agregar_IVA_bloques');
+
+ function agregar_IVA_bloques( $cart ) {
+    // Evitamos que se ejecute en el panel de administración
+    if ( is_admin() && ! defined( 'DOING_AJAX' ) ) {
+        return;
+    }
+
+    $total_campo = 26;
+
+    // Recorremos el carrito en tiempo real
+    foreach ( $cart->get_cart() as $cart_item ) {
+        $product_id = $cart_item['product_id'];
+        $cantidad   = $cart_item['quantity'];
+
+        // Obtenemos el valor de nuestro campo personalizado
+        $valor = get_post_meta( $product_id, '_mi_campo_personalizado', true );
+
+        // Verificamos que sea un número válido
+        if ( is_numeric( $valor ) ) {
+            $total_campo += ( (float) $valor * $cantidad );
+        }
+    }
+
+    // Si el total es mayor a cero, inyectamos el renglón
+    if ( $total_campo > 0 ) {
+        /* * Parámetros de add_fee:
+         * 1. Nombre del cargo (Lo que verá el cliente)
+         * 2. Monto a cobrar
+         * 3. ¿Es imponible? (true si lleva impuestos, false si es libre de impuestos)
+         */
+        $cart->add_fee( 'IVA', $total_campo, false );
+    }
 }
