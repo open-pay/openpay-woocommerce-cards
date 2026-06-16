@@ -375,39 +375,3 @@ function mostrar_iva_checkout() {
         <?php
     }
 }
-
-// Mostramos el campo de IVA en checkout (Bloques Gutemberg)
-add_action( 'woocommerce_cart_calculate_fees','agregar_IVA_bloques');
-
- function agregar_IVA_bloques( $cart ) {
-    // Evitamos que se ejecute en el panel de administración
-    if ( is_admin() && ! defined( 'DOING_AJAX' ) ) {
-        return;
-    }
-
-    $total_campo = 26;
-
-    // Recorremos el carrito en tiempo real
-    foreach ( $cart->get_cart() as $cart_item ) {
-        $product_id = $cart_item['product_id'];
-        $cantidad   = $cart_item['quantity'];
-
-        // Obtenemos el valor de nuestro campo personalizado
-        $valor = get_post_meta( $product_id, '_mi_campo_personalizado', true );
-
-        // Verificamos que sea un número válido
-        if ( is_numeric( $valor ) ) {
-            $total_campo += ( (float) $valor * $cantidad );
-        }
-    }
-
-    // Si el total es mayor a cero, inyectamos el renglón
-    if ( $total_campo > 0 ) {
-        /* * Parámetros de add_fee:
-         * 1. Nombre del cargo (Lo que verá el cliente)
-         * 2. Monto a cobrar
-         * 3. ¿Es imponible? (true si lleva impuestos, false si es libre de impuestos)
-         */
-        $cart->add_fee( 'IVA', $total_campo, false );
-    }
-}
