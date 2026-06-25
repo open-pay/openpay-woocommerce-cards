@@ -38,7 +38,11 @@ class OpenpayImpoconsumo
         add_action('woocommerce_checkout_create_order', [__CLASS__, 'save_order_total_meta'], 10, 2);
         add_action('woocommerce_checkout_create_order_line_item', [__CLASS__, 'save_order_line_item_meta'], 10, 4);
 
-        add_action('woocommerce_blocks_loaded', [__CLASS__, 'register_store_api_data']);
+        if (did_action('woocommerce_blocks_loaded')) {
+            self::register_store_api_data();
+        } else {
+            add_action('woocommerce_blocks_loaded', [__CLASS__, 'register_store_api_data']);
+        }
     }
 
     public static function is_enabled(): bool
@@ -182,29 +186,31 @@ class OpenpayImpoconsumo
         return [
             'enabled' => self::is_enabled(),
             'total' => wc_format_decimal($total, wc_get_price_decimals()),
-            'total_formatted' => wp_strip_all_tags(wc_price($total)),
+            'total_formatted' => html_entity_decode(
+                wp_strip_all_tags(wc_price($total)),
+                ENT_QUOTES,
+                get_bloginfo('charset')
+            ),
         ];
     }
 
     public static function get_store_api_cart_schema(): array
     {
         return [
-            'properties' => [
-                'enabled' => [
-                    'description' => __('Indica si Impoconsumo está habilitado.', 'openpay-cards'),
-                    'type' => 'boolean',
-                    'readonly' => true,
-                ],
-                'total' => [
-                    'description' => __('Total informativo de Impoconsumo.', 'openpay-cards'),
-                    'type' => 'string',
-                    'readonly' => true,
-                ],
-                'total_formatted' => [
-                    'description' => __('Total informativo de Impoconsumo formateado.', 'openpay-cards'),
-                    'type' => 'string',
-                    'readonly' => true,
-                ],
+            'enabled' => [
+                'description' => __('Indica si Impoconsumo está habilitado.', 'openpay-cards'),
+                'type' => 'boolean',
+                'readonly' => true,
+            ],
+            'total' => [
+                'description' => __('Total informativo de Impoconsumo.', 'openpay-cards'),
+                'type' => 'string',
+                'readonly' => true,
+            ],
+            'total_formatted' => [
+                'description' => __('Total informativo de Impoconsumo formateado.', 'openpay-cards'),
+                'type' => 'string',
+                'readonly' => true,
             ],
         ];
     }

@@ -1,6 +1,6 @@
 import React from "react";
 
-const OpenpayImpoconsumoSummary = ({ extensions, context }) => {
+const OpenpayImpoconsumoSummary = ({ extensions = {}, context = "" }) => {
   const data = extensions?.openpay_cards_impoconsumo || {};
   const total = parseFloat(data.total || "0");
 
