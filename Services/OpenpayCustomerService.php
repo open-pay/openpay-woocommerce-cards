@@ -75,8 +75,8 @@ Class OpenpayCustomerService{
             $customer = $this->openpay->customers->add($customer_data);
             $this->logger->info('[OpenpayCustomerService.create] => customer_id - ' . $customer->id); 
             $this->updateCustomerId($customer->id);
-           
-            $this->logger->info('[OpenpayCustomerService.create] => customer_data - ' . $customer_data); 
+
+            $this->logger->info('[OpenpayCustomerService.create] => customer_data - ' . json_encode($customer_data));
             $this->logger->info('[OpenpayCustomerService.create] => customer_id - ' . $customer->id); 
 
             return $customer;

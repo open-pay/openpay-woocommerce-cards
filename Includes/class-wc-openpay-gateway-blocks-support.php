@@ -6,8 +6,22 @@ use OpenpayCards\Services\PaymentSettings\OpenpayInstallments;
 use OpenpayCards\Services\PaymentSettings\OpenpayIVA;
 
 final class WC_Openpay_Gateway_Blocks_Support extends AbstractPaymentMethodType {
-    
-    protected $name = 'wc_openpay_gateway'; 
+
+    protected $name = 'wc_openpay_gateway';
+
+    // Añadimos estas propiedades para guardar los servicios
+    private $iva_service;
+    private $cards_service;
+    private $installments_service;
+    private $openpay_gateway;
+
+    // Permitimos inyectarlos opcionalmente en el constructor (para los tests)
+    public function __construct($iva = null, $cards = null, $installments = null, $gateway = null) {
+        $this->iva_service = $iva;
+        $this->cards_service = $cards;
+        $this->installments_service = $installments;
+        $this->openpay_gateway = $gateway;
+    }
 
     public function initialize() {
 		// get payment gateway settings
@@ -42,19 +56,20 @@ final class WC_Openpay_Gateway_Blocks_Support extends AbstractPaymentMethodType 
 		wp_register_script(
 			'wc-openpay-gateway-blocks-integration',
 			plugin_dir_url( __DIR__ ) . '/blocks/checkout-form/build/index.js',
-			$dependencies, 
-		    $version, 
+			$dependencies,
+		    $version,
 			true
 		);
 		return array( 'wc-openpay-gateway-blocks-integration' );
 	}
 
     public function get_payment_method_data() {
-      $cards_service = new OpenpayCardService();
-      $installments = new OpenpayInstallments();
-      $IVA = new OpenpayIVA();
-      $openpay_gateway = new WC_Openpay_Gateway();
-      $sandboxUrlPrefix = 'yes' === $this->get_setting( 'sandbox' ) ? 'sandbox-' :'';
+        $cards_service = $this->cards_service ?? new OpenpayCardService();
+        $installments = $this->installments_service ?? new OpenpayInstallments();
+        $IVA = $this->iva_service ?? new OpenpayIVA();
+        $openpay_gateway = $this->openpay_gateway ?? new WC_Openpay_Gateway();
+
+        $sandboxUrlPrefix = 'yes' === $this->get_setting( 'sandbox' ) ? 'sandbox-' :'';
 
 		return array(
             'merchantId' => $openpay_gateway->merchant_id,
