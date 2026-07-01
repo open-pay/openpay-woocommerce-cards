@@ -40,6 +40,7 @@ class WC_Openpay_Gateway extends WC_Payment_Gateway
     protected $card_points;
     protected $msi;
     protected $iva = 0;
+    protected $impoconsumo;
     protected $installments_is_active;
     protected $minimum_amount_interest_free;
     protected $transactionErrorMessage = null;
@@ -86,6 +87,7 @@ class WC_Openpay_Gateway extends WC_Payment_Gateway
         $this->card_points = 'yes' === $this->get_option('card_points');
         $this->msi = $this->get_option('msi');
         $this->iva = $this->country == 'CO' ? $this->get_option('iva') : 0;
+        $this->impoconsumo = $this->country == 'CO' ? $this->get_option('impoconsumo') : 0;
         $this->installments_is_active = 'yes' === $this->get_option('installments_is_active');
         $this->minimum_amount_interest_free = $this->get_option('minimum_amount_interest_free');
         $this->charge_type = $this->country == 'MX' ? $this->get_option('charge_type') : $this->get_option('charge_type_co_pe');
@@ -463,7 +465,8 @@ class WC_Openpay_Gateway extends WC_Payment_Gateway
             'sandbox' => $this->sandbox,
             'openpay_has_interest_pe' => $openpay_has_interest_pe,
             'country' => $this->country,
-            'iva' => $this->iva
+            'iva' => $this->iva,
+            'impoconsumo' => $this->impoconsumo
         );
 
         $this->logger->info("[WC_Openpay_Gateway.process_payment] => Payment Settings " . json_encode($payment_settings));
