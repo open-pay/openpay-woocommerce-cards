@@ -3,6 +3,7 @@
 use Automattic\WooCommerce\Blocks\Payments\Integrations\AbstractPaymentMethodType;
 use OpenpayCards\Services\OpenpayCardService;
 use OpenpayCards\Services\PaymentSettings\OpenpayInstallments;
+use OpenpayCards\Services\PaymentSettings\OpenpayIVA;
 
 final class WC_Openpay_Gateway_Blocks_Support extends AbstractPaymentMethodType {
     
@@ -51,6 +52,7 @@ final class WC_Openpay_Gateway_Blocks_Support extends AbstractPaymentMethodType 
     public function get_payment_method_data() {
       $cards_service = new OpenpayCardService();
       $installments = new OpenpayInstallments();
+      $IVA = new OpenpayIVA();
       $openpay_gateway = new WC_Openpay_Gateway();
       $sandboxUrlPrefix = 'yes' === $this->get_setting( 'sandbox' ) ? 'sandbox-' :'';
 
@@ -61,6 +63,7 @@ final class WC_Openpay_Gateway_Blocks_Support extends AbstractPaymentMethodType 
             'openpayAPI' =>  'https://'.$sandboxUrlPrefix.'api.openpay.'.strtolower($this->get_setting('country')).'/v1',
             'cardPoints' => 'yes' === $this->get_setting( 'card_points' ),
             'installments' => $installments->getInstallments(),
+            'iva' => $IVA->getTotalIVA(),
             'saveCardMode' => $this->get_setting( 'save_card_mode' ),
             'savedCardsList' => $cards_service->getCreditCardList(),
             'userLoggedIn' => is_user_logged_in(),

@@ -1,13 +1,14 @@
 <?php
 namespace OpenpayCards\Handlers;
 use OpenpayCards\Services\PaymentSettings\Openpay3dSecure;
+use OpenpayCards\Services\PaymentSettings\OpenpayIVA;
 class OpenpayChargeHandlerCo {
 
     public function __construct()
     {
         $this->logger = wc_get_logger();
     }
-    public function applyPaymentSettings($charge_request,$payment_settings){
+    public function applyPaymentSettings($charge_request,$payment_settings,$order){
 
         // CUOTAS
         if (isset($payment_settings['openpay_payment_plan']) && $payment_settings['openpay_payment_plan'] != 1){
@@ -27,7 +28,11 @@ class OpenpayChargeHandlerCo {
 
         // APLICA IVA
         if (isset($payment_settings['iva']) && $payment_settings['iva'] != 0){
-            $charge_request['iva'] = $payment_settings['iva'];
+            $IVA = new OpenpayIVA();
+            $charge_request['taxes'] = array(
+                "base_amount" => $order->get_total(),
+                "iva_amount" => $IVA->getTotalIVA()
+            );
         }
 
         $this->logger->info("[OpenpayChargeHandlerCo.applyPaymentSettings] => " . json_encode($charge_request) );

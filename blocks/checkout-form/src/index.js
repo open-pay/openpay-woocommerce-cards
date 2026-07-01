@@ -1,6 +1,9 @@
-//import { registerPaymentMethod } from '@woocommerce/blocks-registry';
 import { decodeEntities } from '@wordpress/html-entities';
 import Form from './form';
+import {registerPlugin} from "@wordpress/plugins";
+import React from "react";
+import IvaOpenpay from "./tax-sumary/iva";
+import ImpoconsumoOpenpay from "./tax-sumary/impoconsumo";
 
 const { registerPaymentMethod } = window.wc.wcBlocksRegistry;
 const { getSetting } = window.wc.wcSettings
@@ -33,3 +36,17 @@ registerPaymentMethod( {
 		features: settings.supports,
 	}
 } )
+
+// 4. REGISTRA COMPONENTE IVA COLOMBIA
+registerPlugin('iva-openpay', {
+	render: () => <IvaOpenpay/>,
+	// Esto asegura que solo se intente pintar en la pantalla de Checkout
+	scope: 'woocommerce-checkout',
+});
+
+// 4. REGISTRA COMPONENTE IVA COLOMBIA
+registerPlugin('impoconsumo-openpay', {
+	render: () => <ImpoconsumoOpenpay/>,
+	// Esto asegura que solo se intente pintar en la pantalla de Checkout
+	scope: 'woocommerce-checkout',
+});

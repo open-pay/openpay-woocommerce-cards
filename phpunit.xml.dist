@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://schema.phpunit.de/9.3/phpunit.xsd" bootstrap="tests/bootstrap.php">
+  <coverage processUncoveredFiles="true">
+    <include>
+      <directory suffix=".php">./Includes</directory>
+      <directory suffix=".php">./Services</directory>
+      <directory suffix=".php">./utils</directory>
+    </include>
+    <report>
+      <html outputDirectory="coverage"/>
+      <text outputFile="php://stdout" showUncoveredFiles="true"/>
+    </report>
+  </coverage>
+  <php>
+    <const name="WP_TESTS_DIR" value="/tmp/wordpress-tests-lib"/>
+  </php>
+  <testsuites>
+    <testsuite name="unit">
+      <directory>tests</directory>
+      <exclude>./tests/Services/OpenpayWebhookProcessorServiceTest.php</exclude>
+    </testsuite>
+  </testsuites>
+  <logging/>
+</phpunit>
