@@ -178,6 +178,12 @@ function openpay_init_gateway()
     if (class_exists('WC_Payment_Gateway')) {
         require_once('class-wc-openpay-gateway.php');
     }
+    if (!class_exists('\OpenpayCards\Includes\OpenpayImpoconsumo')) {
+        require_once(dirname(__FILE__) . '/Includes/OpenpayImpoconsumo.php');
+    }
+
+    \OpenpayCards\Includes\OpenpayImpoconsumo::init();
+
     if (!class_exists('WC_Openpay_Refund_Service')) {
         require_once(dirname(__FILE__) . "/Services/class-wc-openpay-refund-service.php");
     }

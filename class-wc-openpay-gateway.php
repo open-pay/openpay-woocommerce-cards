@@ -276,6 +276,14 @@ class WC_Openpay_Gateway extends WC_Payment_Gateway
                 'desc_tip' => true,
                 'default' => '0',
             ),
+            'impoconsumo' => array(
+                'type' => 'checkbox',
+                'required' => true,
+                'title' => __('Impoconsumo', 'woothemes'),
+                'label' => __('Habilitar', 'woothemes'),
+                'default' => 'no',
+                'id' => 'openpay_show_impoconsumo',
+            ),
             // Monto minimo para meses sin intereses solo MX
             'minimum_amount_interest_free' => array(
                 'type' => 'number',
@@ -558,6 +566,12 @@ class WC_Openpay_Gateway extends WC_Payment_Gateway
     public function process_admin_options()
     {
         parent::process_admin_options();
+        $settings = get_option('woocommerce_' . $this->id . '_settings', []);
+        if (is_array($settings) && ($settings['country'] ?? '') !== 'CO') {
+            $settings['impoconsumo'] = 'no';
+            update_option('woocommerce_' . $this->id . '_settings', $settings);
+            $this->settings = $settings;
+        }
         $settingsValidation = new OpenpayPaymentSettingsValidation();
         $settingsValidation->validateOpenpayCredentials();
         $settingsValidation->validateOpenpayCurrencies();
