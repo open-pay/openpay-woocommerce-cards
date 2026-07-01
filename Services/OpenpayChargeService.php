@@ -199,7 +199,6 @@ class OpenpayChargeService
         }
         return substr(implode(', ', $products), 0, 249);
     }
-
 }
 
 
