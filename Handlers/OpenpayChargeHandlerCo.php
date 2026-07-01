@@ -1,5 +1,6 @@
 <?php
 namespace OpenpayCards\Handlers;
+use OpenpayCards\Includes\OpenpayImpoconsumo;
 use OpenpayCards\Services\PaymentSettings\Openpay3dSecure;
 use OpenpayCards\Services\PaymentSettings\OpenpayIVA;
 class OpenpayChargeHandlerCo {
@@ -29,10 +30,14 @@ class OpenpayChargeHandlerCo {
         // APLICA IVA
         if (isset($payment_settings['iva']) && $payment_settings['iva'] != 0){
             $IVA = new OpenpayIVA();
-            $charge_request['taxes'] = array(
-                "base_amount" => $order->get_total(),
-                "iva_amount" => $IVA->getTotalIVA()
-            );
+            $charge_request['taxes']['base_amount'] = $order->get_total();
+            $charge_request['taxes']['iva_amount']  = $IVA->getTotalIVA();
+        }
+
+        // APLICA Impoconsumo
+        if (isset($payment_settings['impoconsumo']) && $payment_settings['impoconsumo'] != 0){
+            $impoconsumo = new OpenpayImpoconsumo();
+            $charge_request['taxes']['consumption_tax_amount']  = $impoconsumo->get_cart_impoconsumo_total();
         }
 
         $this->logger->info("[OpenpayChargeHandlerCo.applyPaymentSettings] => " . json_encode($charge_request) );

@@ -53,6 +53,7 @@ class OpenpayErrorHandler {
             }
         } else {
             $message = "[EXCEPTION] " . $exception->getMessage();
+            $context = [];
         }
 
        
