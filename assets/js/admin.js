@@ -44,6 +44,7 @@ jQuery(document).ready(function () {
         jQuery("#woocommerce_wc_openpay_gateway_impoconsumo")
           .closest("tr")
           .hide();
+        jQuery("#woocommerce_wc_openpay_gateway_propina").closest("tr").hide();
       }
       if (country == "CO") {
         jQuery(
@@ -54,6 +55,7 @@ jQuery(document).ready(function () {
         jQuery("#woocommerce_wc_openpay_gateway_impoconsumo")
           .closest("tr")
           .show();
+        jQuery("#woocommerce_wc_openpay_gateway_propina").closest("tr").show();
       }
     } else if (country == "MX") {
       jQuery(
@@ -66,6 +68,7 @@ jQuery(document).ready(function () {
       jQuery("#woocommerce_wc_openpay_gateway_impoconsumo")
         .closest("tr")
         .hide();
+      jQuery("#woocommerce_wc_openpay_gateway_propina").closest("tr").hide();
       jQuery("#woocommerce_wc_openpay_gateway_capture").closest("tr").show();
       jQuery("#woocommerce_wc_openpay_gateway_card_points")
         .closest("tr")
