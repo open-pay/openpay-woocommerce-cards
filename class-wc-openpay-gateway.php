@@ -286,6 +286,14 @@ class WC_Openpay_Gateway extends WC_Payment_Gateway
                 'default' => 'no',
                 'id' => 'openpay_show_impoconsumo',
             ),
+            'propina' => array(
+                'type' => 'checkbox',
+                'required' => true,
+                'title' => __('Propina', 'woothemes'),
+                'label' => __('Habilitar', 'woothemes'),
+                'default' => 'no',
+                'id' => 'openpay_show_propina',
+            ),
             // Monto minimo para meses sin intereses solo MX
             'minimum_amount_interest_free' => array(
                 'type' => 'number',
@@ -572,6 +580,7 @@ class WC_Openpay_Gateway extends WC_Payment_Gateway
         $settings = get_option('woocommerce_' . $this->id . '_settings', []);
         if (is_array($settings) && ($settings['country'] ?? '') !== 'CO') {
             $settings['impoconsumo'] = 'no';
+            $settings['propina'] = 'no';
             update_option('woocommerce_' . $this->id . '_settings', $settings);
             $this->settings = $settings;
         }
