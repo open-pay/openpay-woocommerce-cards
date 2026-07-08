@@ -2,8 +2,7 @@ import { decodeEntities } from "@wordpress/html-entities";
 import Form from "./form";
 import { registerPlugin } from "@wordpress/plugins";
 import React from "react";
-import IvaOpenpay from "./tax-sumary/iva";
-import ImpoconsumoOpenpay from "./tax-sumary/impoconsumo";
+import TaxSummaryOpenpay from "./tax-sumary/tax-sumary";
 import "./tax-sumary/propina";
 
 const { registerPaymentMethod } = window.wc.wcBlocksRegistry;
@@ -38,15 +37,7 @@ registerPaymentMethod({
 });
 
 // 4. REGISTRA COMPONENTE IVA COLOMBIA
-registerPlugin("iva-openpay", {
-  render: () => <IvaOpenpay />,
-  // Esto asegura que solo se intente pintar en la pantalla de Checkout
-  scope: "woocommerce-checkout",
-});
-
-// 4. REGISTRA COMPONENTE IMPoconsumo COLOMBIA
-registerPlugin("impoconsumo-openpay", {
-  render: () => <ImpoconsumoOpenpay />,
-  // Esto asegura que solo se intente pintar en la pantalla de Checkout
+registerPlugin("wc-openpay-tax-summary", {
+  render: () => <TaxSummaryOpenpay />,
   scope: "woocommerce-checkout",
 });

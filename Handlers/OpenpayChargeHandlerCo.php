@@ -3,16 +3,18 @@ namespace OpenpayCards\Handlers;
 use OpenpayCards\Includes\OpenpayImpoconsumo;
 use OpenpayCards\Services\PaymentSettings\Openpay3dSecure;
 use OpenpayCards\Services\PaymentSettings\OpenpayIVA;
-class OpenpayChargeHandlerCo {
+class OpenpayChargeHandlerCo
+{
 
     public function __construct()
     {
         $this->logger = wc_get_logger();
     }
-    public function applyPaymentSettings($charge_request,$payment_settings,$order){
+    public function applyPaymentSettings($charge_request, $payment_settings, $order)
+    {
 
         // CUOTAS
-        if (isset($payment_settings['openpay_payment_plan']) && $payment_settings['openpay_payment_plan'] != 1){
+        if (isset($payment_settings['openpay_payment_plan']) && $payment_settings['openpay_payment_plan'] != 1) {
             $charge_request["payment_plan"] = array("payments" => $payment_settings['openpay_payment_plan']);
         }
 
@@ -23,24 +25,31 @@ class OpenpayChargeHandlerCo {
         }
 
         // SOLO APLICA CARGO DIRECTO (capture=true)
-        if (isset($payment_settings['capture'])){
+        if (isset($payment_settings['capture'])) {
             $charge_request["capture"] = $payment_settings['capture'];
         }
 
         // APLICA IVA
-        if (isset($payment_settings['iva']) && $payment_settings['iva'] != 0){
+        if ((isset($payment_settings['iva']) && $payment_settings['iva'] != 0) && ((isset($payment_settings['impoconsumo']) && $payment_settings['impoconsumo'] != "0"))) {
             $IVA = new OpenpayIVA();
-            $charge_request['taxes']['base_amount'] = $order->get_total();
-            $charge_request['taxes']['iva_amount']  = $IVA->getTotalIVA();
+            $impoconsumo = new OpenpayImpoconsumo();
+
+            $base_amount = $order->get_total() - $impoconsumo->get_cart_impoconsumo_total() - $IVA->getTotalIVA();
+            $this->logger->info("[OpenpayChargeHandlerCo.applyPaymentSettings] => base_amount: " . $base_amount);
+            $charge_request['taxes']['base_amount'] = $base_amount;
+            $charge_request['taxes']['iva_amount'] = $IVA->getTotalIVA();
+        } else if (isset($payment_settings['iva']) && $payment_settings['iva'] != 0) {
+            $IVA = new OpenpayIVA();
+            $charge_request['iva'] = $IVA->getTotalIVA();
         }
 
         // APLICA Impoconsumo
-        if (isset($payment_settings['impoconsumo']) && $payment_settings['impoconsumo'] != 0){
+        if (isset($payment_settings['impoconsumo']) && $payment_settings['impoconsumo'] != "0") {
             $impoconsumo = new OpenpayImpoconsumo();
-            $charge_request['taxes']['consumption_tax_amount']  = $impoconsumo->get_cart_impoconsumo_total();
+            $charge_request['taxes']['consumption_tax_amount'] = $impoconsumo->get_cart_impoconsumo_total();
         }
 
-        $this->logger->info("[OpenpayChargeHandlerCo.applyPaymentSettings] => " . json_encode($charge_request) );
+        $this->logger->info("[OpenpayChargeHandlerCo.applyPaymentSettings] => " . json_encode($charge_request));
         return $charge_request;
     }
 
