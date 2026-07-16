@@ -61,7 +61,7 @@ const Form = (props) => {
   const isAddressComplete = (address) => {
     return Object.values(address).every(
       (value) =>
-        value !== undefined && value !== null && value.toString().trim() !== ""
+        value !== undefined && value !== null && value.toString().trim() !== "",
     );
   };
 
@@ -72,7 +72,7 @@ const Form = (props) => {
       cvv2: openpayCardCvc,
       expiration_month: openpayCardExpiry.substring(0, 2),
       expiration_year: openpayCardExpiry.substring(
-        openpayCardExpiry.length - 2
+        openpayCardExpiry.length - 2,
       ),
     };
     const address = {
@@ -121,7 +121,7 @@ const Form = (props) => {
         },
         (errorResponse) => {
           resolve(errorResponse);
-        }
+        },
       );
     });
   };
@@ -133,7 +133,7 @@ const Form = (props) => {
           openpayHolderName,
           openpayCardNumber,
           openpayCardExpiry,
-          openpayCardCvc
+          openpayCardCvc,
         );
         if (openpayFieldsErrorMessage) {
           return {
@@ -146,7 +146,7 @@ const Form = (props) => {
         if (result !== undefined) {
           if (result.errorCode !== undefined) {
             const openpayServiceErrorMessage = OpenpayServiceValidation(
-              result.errorCode
+              result.errorCode,
             );
             if (openpayServiceErrorMessage) {
               return {
@@ -240,7 +240,7 @@ const Form = (props) => {
               headers: {
                 "Content-Type": "application/x-www-form-urlencoded",
               },
-            }
+            },
           )
           .then((response) => {
             setCardType(response.data.card_type);
@@ -515,7 +515,7 @@ const Form = (props) => {
               </div>
             </div>
           </div>,
-          document.body // Esto saca el modal del contenedor de WooCommerce y lo pone en el body
+          document.body, // Esto saca el modal del contenedor de WooCommerce y lo pone en el body
         )}
     </div>
   );

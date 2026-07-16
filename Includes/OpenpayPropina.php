@@ -62,11 +62,13 @@ class OpenpayPropina
         $amount = self::get_session_amount();
         $display_amount = $amount > 0 ? self::format_amount_for_display($amount, true) : '';
         $max_amount = self::get_max_allowed_amount();
-        $max_amount = self::get_max_allowed_amount();
+        $price_decimals = wc_get_price_decimals();
+        $decimal_separator = wc_get_price_decimal_separator();
+        $thousand_separator = wc_get_price_thousand_separator();
 
         echo '<div class="openpay-propina-checkout-field" style="margin-bottom:16px;">';
         echo '<label for="openpay_propina" style="display:block;margin-bottom:6px;">' . esc_html__('Propina', 'openpay-cards') . '</label>';
-        echo '<input type="text" id="openpay_propina" name="openpay_propina" class="input-text" data-max="' . esc_attr(wc_format_decimal($max_amount, wc_get_price_decimals())) . '" inputmode="decimal" autocomplete="off" value="' . esc_attr($display_amount) . '" placeholder="" style="width:120px;text-align:center;border:0;background:transparent;outline:none;box-shadow:none;caret-color:currentColor;" />';
+        echo '<input type="text" id="openpay_propina" name="openpay_propina" class="input-text" data-price-decimals="' . esc_attr($price_decimals) . '" data-decimal-separator="' . esc_attr($decimal_separator) . '" data-thousand-separator="' . esc_attr($thousand_separator) . '" data-max="' . esc_attr(wc_format_decimal($max_amount, wc_get_price_decimals())) . '" inputmode="decimal" autocomplete="off" value="' . esc_attr($display_amount) . '" placeholder="" style="width:120px;text-align:center;border:0;background:transparent;outline:none;box-shadow:none;caret-color:currentColor;" />';
         echo '</div>';
     }
 
@@ -262,6 +264,10 @@ class OpenpayPropina
                 ENT_QUOTES,
                 get_bloginfo('charset')
             ),
+            'price_decimals' => wc_get_price_decimals(),
+            'decimal_separator' => wc_get_price_decimal_separator(),
+            'thousand_separator' => wc_get_price_thousand_separator(),
+            'debug' => defined('WP_DEBUG') && WP_DEBUG,
         ];
     }
 
@@ -286,6 +292,26 @@ class OpenpayPropina
             'max_amount_formatted' => [
                 'description' => __('Monto máximo permitido para Propina formateado.', 'openpay-cards'),
                 'type' => 'string',
+                'readonly' => true,
+            ],
+            'price_decimals' => [
+                'description' => __('Número de decimales configurado en WooCommerce.', 'openpay-cards'),
+                'type' => 'integer',
+                'readonly' => true,
+            ],
+            'decimal_separator' => [
+                'description' => __('Separador decimal configurado en WooCommerce.', 'openpay-cards'),
+                'type' => 'string',
+                'readonly' => true,
+            ],
+            'thousand_separator' => [
+                'description' => __('Separador de miles configurado en WooCommerce.', 'openpay-cards'),
+                'type' => 'string',
+                'readonly' => true,
+            ],
+            'debug' => [
+                'description' => __('Indica si se deben mostrar logs de depuración.', 'openpay-cards'),
+                'type' => 'boolean',
                 'readonly' => true,
             ],
         ];
@@ -320,24 +346,37 @@ class OpenpayPropina
             return 0.0;
         }
 
-        $totals = WC()->cart->get_totals();
-        $cart_total = isset($totals['total']) ? (float) $totals['total'] : 0.0;
+        $cart = WC()->cart;
+        $tip_fee_total = self::get_cart_tip_fee_total($cart);
 
-        $current_tip = 0.0;
-
-        if (WC()->session) {
-            $current_tip = self::normalize_amount(WC()->session->get(self::SESSION_KEY, 0));
-        }
+        $cart_total =
+            (float) $cart->get_cart_contents_total()
+            + (float) $cart->get_shipping_total()
+            + max(0.0, (float) $cart->get_fee_total() - $tip_fee_total)
+            + (float) $cart->get_total_tax();
 
         if ($cart_total <= 0) {
-            $cart_total =
-                (float) WC()->cart->get_cart_contents_total()
-                + (float) WC()->cart->get_shipping_total()
-                + (float) WC()->cart->get_fee_total()
-                + (float) WC()->cart->get_total_tax();
+            $totals = $cart->get_totals();
+            $cart_total = isset($totals['total']) ? (float) $totals['total'] : 0.0;
+            $cart_total = max(0.0, $cart_total - $tip_fee_total);
         }
 
-        return max(0.0, $cart_total - $current_tip);
+        return max(0.0, $cart_total);
+    }
+
+    private static function get_cart_tip_fee_total(\WC_Cart $cart): float
+    {
+        $total = 0.0;
+
+        foreach ($cart->get_fees() as $fee) {
+            $fee_name = isset($fee->name) ? (string) $fee->name : '';
+
+            if ($fee_name === __('Propina', 'openpay-cards')) {
+                $total += isset($fee->amount) ? (float) $fee->amount : 0.0;
+            }
+        }
+
+        return max(0.0, $total);
     }
 
     private static function get_session_amount(): float
@@ -378,8 +417,8 @@ class OpenpayPropina
         return number_format(
             $amount,
             $force_decimals ? wc_get_price_decimals() : 0,
-            '.',
-            ','
+            wc_get_price_decimal_separator(),
+            wc_get_price_thousand_separator()
         );
     }
 
