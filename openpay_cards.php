@@ -364,6 +364,17 @@ add_action('woocommerce_review_order_before_order_total', 'mostrar_iva_checkout'
 
 function mostrar_iva_checkout()
 {
+
+    $settings = get_option('woocommerce_wc_openpay_gateway_settings', []);
+
+    if (
+        !is_array($settings)
+        || ($settings['country'] ?? '') !== 'CO'
+        || ($settings['iva'] ?? 'no') !== 'yes'
+    ) {
+        return;
+    }
+
     $iva_total = 0;
 
     // Recorremos el carrito
