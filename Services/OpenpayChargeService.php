@@ -161,7 +161,7 @@ class OpenpayChargeService
         $this->logger->info('[OpenpayChargeService.collectChargeData] start');
         $charge_request = array(
             "method" => "card",
-            "amount" => number_format((float) $this->order->get_total(), 2, '.', ''),
+            "amount" => $this->openpayAmount($this->order->get_total()),
             "currency" => strtolower(get_woocommerce_currency()),
             "source_id" => $payment_settings['openpay_token'],
             "device_session_id" => $payment_settings['device_session_id'],
@@ -174,7 +174,7 @@ class OpenpayChargeService
             $tip = $this->getOpenpayTipAmount();
 
             if ($tip > 0) {
-                $charge_request['tip'] = number_format($tip, 2, '.', '');
+                $charge_request['tip'] = $this->openpayAmount($tip);
             }
         }
 
@@ -219,6 +219,17 @@ class OpenpayChargeService
         }
 
         return (float) $tip;
+    }
+
+    private function openpayAmount($amount): float
+    {
+        $amount = wc_format_decimal($amount, 2);
+
+        if ($amount === '' || !is_numeric($amount)) {
+            return 0.0;
+        }
+
+        return round((float) $amount, 2);
     }
 
     private function getProductsDetail()

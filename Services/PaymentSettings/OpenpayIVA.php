@@ -3,7 +3,7 @@ namespace OpenpayCards\Services\PaymentSettings;
 
 use WC_Openpay_Gateway;
 
-Class OpenpayIVA extends WC_Openpay_Gateway
+class OpenpayIVA extends WC_Openpay_Gateway
 {
     public function __construct()
     {
@@ -12,6 +12,16 @@ Class OpenpayIVA extends WC_Openpay_Gateway
 
     public function getTotalIVA()
     {
+        $settings = get_option('woocommerce_wc_openpay_gateway_settings', []);
+
+        if (
+            !is_array($settings)
+            || ($settings['country'] ?? '') !== 'CO'
+            || ($settings['iva'] ?? 'no') !== 'yes'
+        ) {
+            return 0.0;
+        }
+
         $total_campo = 0;
 
         if (isset(WC()->cart)) {
@@ -22,7 +32,7 @@ Class OpenpayIVA extends WC_Openpay_Gateway
                 $valor = get_post_meta($product_id, 'openpay_taxes_iva', true);
 
                 if (is_numeric($valor)) {
-                    $total_campo += ((float)$valor * $cantidad);
+                    $total_campo += ((float) $valor * $cantidad);
                 }
             }
         }

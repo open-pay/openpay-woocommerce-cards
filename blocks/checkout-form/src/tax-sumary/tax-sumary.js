@@ -6,25 +6,34 @@ const settings = getSetting("wc_openpay_gateway_data", {});
 
 const formatCurrency = (value) => {
   const amount = Number(String(value || 0).replace(/[^0-9.-]/g, ""));
+  const decimals = parseInt(settings.price_decimals ?? "2", 10);
+  const priceDecimals = Number.isNaN(decimals) ? 2 : Math.max(0, decimals);
 
   if (Number.isNaN(amount)) {
-    return "$0.00";
+    return "$0";
   }
 
-  return `$${amount.toLocaleString("en-US", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  })}`;
+  return `$${new Intl.NumberFormat("en-US", {
+    style: "decimal",
+    minimumFractionDigits: priceDecimals,
+    maximumFractionDigits: priceDecimals,
+  }).format(amount)}`;
 };
 
 const TaxSummaryContent = ({ extensions = {}, context = "" }) => {
   const impoconsumoData = extensions?.openpay_cards_impoconsumo || {};
 
-  const ivaTotal = Number(settings.iva || 0);
+  const ivaEnabled =
+    settings.iva_enabled === true ||
+    settings.iva_enabled === "yes" ||
+    settings.iva_enabled === "1";
+
+  const ivaTotal = ivaEnabled ? Number(settings.iva || 0) : 0;
+  const ivaFormatted = settings.iva_formatted || formatCurrency(ivaTotal);
 
   const impoconsumoTotal = Number(impoconsumoData.total || 0);
 
-  const shouldShowIva = ivaTotal > 0;
+  const shouldShowIva = ivaEnabled && ivaTotal > 0;
   const shouldShowImpoconsumo =
     impoconsumoData.enabled === true && impoconsumoTotal > 0;
 
@@ -47,7 +56,7 @@ const TaxSummaryContent = ({ extensions = {}, context = "" }) => {
             className="wc-block-components-checkout-order-summary__title-text--sublabel"
             style={{ fontSize: 11 }}
           >
-            (Iformativo)
+            (Informativo)
           </span>
         </p>
       </div>
@@ -60,7 +69,7 @@ const TaxSummaryContent = ({ extensions = {}, context = "" }) => {
           <span className="wc-block-components-totals-item__label">IVA</span>
 
           <span className="wc-block-components-totals-item__value">
-            {formatCurrency(ivaTotal)}
+            {ivaFormatted}
           </span>
         </div>
       ) : null}

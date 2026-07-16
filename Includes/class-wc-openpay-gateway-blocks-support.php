@@ -91,6 +91,16 @@ final class WC_Openpay_Gateway_Blocks_Support extends AbstractPaymentMethodType
 
         $sandboxUrlPrefix = 'yes' === $this->get_setting('sandbox') ? 'sandbox-' : '';
 
+        $iva_setting = $this->get_setting('iva');
+        $iva_enabled = $this->get_setting('country') === 'CO' && in_array($iva_setting, ['yes', '1', 1, true], true);
+        $iva_total = $iva_enabled ? (float) $IVA->getTotalIVA() : 0.0;
+
+        $iva_formatted = html_entity_decode(
+            wp_strip_all_tags(wc_price($iva_total)),
+            ENT_QUOTES,
+            get_bloginfo('charset')
+        );
+
         return array(
             'merchantId' => $openpay_gateway->merchant_id,
             'publicKey' => $openpay_gateway->public_key,
@@ -98,7 +108,11 @@ final class WC_Openpay_Gateway_Blocks_Support extends AbstractPaymentMethodType
             'openpayAPI' => 'https://' . $sandboxUrlPrefix . 'api.openpay.' . strtolower($this->get_setting('country')) . '/v1',
             'cardPoints' => 'yes' === $this->get_setting('card_points'),
             'installments' => $installments->getInstallments(),
-            'iva' => $IVA->getTotalIVA(),
+            'iva_enabled' => $iva_enabled,
+            'iva' => wc_format_decimal($iva_total, wc_get_price_decimals()),
+            'price_decimals' => wc_get_price_decimals(),
+            'decimal_separator' => wc_get_price_decimal_separator(),
+            'thousand_separator' => wc_get_price_thousand_separator(),
             'saveCardMode' => $this->get_setting('save_card_mode'),
             'savedCardsList' => $cards_service->getCreditCardList(),
             'userLoggedIn' => is_user_logged_in(),

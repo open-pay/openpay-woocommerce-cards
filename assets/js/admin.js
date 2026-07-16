@@ -56,6 +56,9 @@ jQuery(document).ready(function () {
           .closest("tr")
           .show();
         jQuery("#woocommerce_wc_openpay_gateway_propina").closest("tr").show();
+        jQuery("#woocommerce_wc_openpay_gateway_installments_is_active")
+          .closest("tr")
+          .hide();
       }
     } else if (country == "MX") {
       jQuery(
