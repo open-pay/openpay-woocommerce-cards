@@ -51,22 +51,33 @@ class OpenpayChargeHandlerCo
         if ($has_iva && $has_impoconsumo) {
             $base_amount = $order->get_total() - $iva_amount - $impoconsumo_amount;
             $charge_request['taxes'] = [
-                'base_amount' => $base_amount,
-                'iva' => number_format($iva_amount, 2, '.', ''),
-                'consumption_tax_amount' => number_format($impoconsumo_amount, 2, '.', ''),
+                'base_amount' => $this->openpayAmount($base_amount),
+                'iva_amount' => $this->openpayAmount($iva_amount),
+                'consumption_tax_amount' => $this->openpayAmount($impoconsumo_amount),
             ];
         } elseif ($has_iva) {
-            $charge_request['iva'] = number_format($iva_amount, 2, '.', '');
+            $charge_request['iva'] = $this->openpayAmount($iva_amount);
         } elseif ($has_impoconsumo) {
             $base_amount = $order->get_total() - $impoconsumo_amount;
             $charge_request['taxes'] = [
-                'base_amount' => $base_amount,
-                'consumption_tax_amount' => number_format($impoconsumo_amount, 2, '.', ''),
+                'base_amount' => $this->openpayAmount($base_amount),
+                'consumption_tax_amount' => $this->openpayAmount($impoconsumo_amount),
             ];
         }
 
         $this->logger->info("[OpenpayChargeHandlerCo.applyPaymentSettings] => " . json_encode($charge_request));
         return $charge_request;
+    }
+
+    private function openpayAmount($amount): float
+    {
+        $amount = wc_format_decimal($amount, 2);
+
+        if ($amount === '' || !is_numeric($amount)) {
+            return 0.0;
+        }
+
+        return round((float) $amount, 2);
     }
 
 }

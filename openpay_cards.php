@@ -392,12 +392,12 @@ function mostrar_iva_checkout()
     // Dibujamos el renglón si hay un valor que mostrar
     if ($iva_total > 0) {
         ?>
-        <tr class="iva">
-            <th><?php _e('IVA total', 'woocommerce'); ?></th>
-            <td data-title="<?php esc_attr_e('IVA', 'woocommerce'); ?>">
-                <?php echo wc_price($iva_total); ?>
-            </td>
-        </tr>
-        <?php
+                <tr class="iva">
+                    <th><?php _e('IVA total', 'woocommerce'); ?></th>
+                    <td data-title="<?php esc_attr_e('IVA', 'woocommerce'); ?>">
+                        <?php echo wc_price($iva_total); ?>
+                    </td>
+                </tr>
+                <?php
     }
 }

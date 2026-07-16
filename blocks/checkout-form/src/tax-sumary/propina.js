@@ -9,16 +9,12 @@ const DEFAULT_FORMAT_CONFIG = {
   debug: false,
 };
 
-const escapeRegExp = (value = "") => {
-  return String(value).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-};
-
 const getFormatConfig = (data = {}) => {
   const parsedDecimals = parseInt(data.price_decimals ?? "2", 10);
 
   return {
     priceDecimals: Number.isNaN(parsedDecimals)
-      ? 2
+      ? DEFAULT_FORMAT_CONFIG.priceDecimals
       : Math.max(0, parsedDecimals),
     decimalSeparator:
       data.decimal_separator || DEFAULT_FORMAT_CONFIG.decimalSeparator,
@@ -29,150 +25,78 @@ const getFormatConfig = (data = {}) => {
 };
 
 const debugLog = (config, label, payload = {}) => {
-  if (!config.debug) {
-    return;
-  }
-
+  if (!config.debug) return;
   console.log(`[Openpay Propina] ${label}`, payload);
 };
 
+// 1. LIMPIEZA: Cortamos por el separador decimal y tomamos SOLO los enteros
 const cleanAmount = (value = "", config = DEFAULT_FORMAT_CONFIG) => {
   const raw = String(value || "");
-  const thousandSeparator = config.thousandSeparator || ",";
   const decimalSeparator = config.decimalSeparator || ".";
 
-  let normalized = raw;
+  // Al cortar por el separador decimal, ignoramos los ".00" visuales
+  const integerPart = raw.split(decimalSeparator)[0];
 
-  if (thousandSeparator !== "") {
-    normalized = normalized.replace(
-      new RegExp(escapeRegExp(thousandSeparator), "g"),
-      "",
-    );
-  }
+  // Eliminamos comas de miles o cualquier carácter no numérico del entero
+  const normalized = integerPart.replace(/\D/g, "");
 
-  if (decimalSeparator !== ".") {
-    normalized = normalized.replace(
-      new RegExp(escapeRegExp(decimalSeparator), "g"),
-      ".",
-    );
-  }
-
-  normalized = normalized.replace(/[^0-9.]/g, "");
-
-  const parts = normalized.split(".");
-
-  if (parts.length > 2) {
-    normalized = `${parts.shift()}.${parts.join("")}`;
-  }
-
-  debugLog(config, "cleanAmount", {
-    raw,
-    normalized,
-    thousandSeparator,
-    decimalSeparator,
-  });
-
+  debugLog(config, "cleanAmount", { raw, integerPart, normalized });
   return normalized;
 };
 
 const parseAmount = (value = "", config = DEFAULT_FORMAT_CONFIG) => {
   const clean = cleanAmount(value, config);
-  const amount = parseFloat(clean);
-  const parsedAmount = Number.isNaN(amount) ? 0 : amount;
-
-  debugLog(config, "parseAmount", {
-    value,
-    clean,
-    parsedAmount,
-  });
-
-  return parsedAmount;
+  const amount = parseInt(clean, 10);
+  return Number.isNaN(amount) ? 0 : amount;
 };
 
-const formatAmount = (
-  value = "",
-  forceDecimals = false,
-  config = DEFAULT_FORMAT_CONFIG,
-) => {
-  const clean = cleanAmount(value, config);
+// 2. FORMATEO: Agregamos separador de miles y adjuntamos los decimales de WooCommerce
+const formatAmount = (value = "", config = DEFAULT_FORMAT_CONFIG) => {
+  const amount = parseAmount(value, config);
 
-  if (clean === "") {
+  if (amount <= 0) {
     return "";
   }
 
-  const hasDecimal = clean.includes(".");
-  const [rawIntegerPart, rawDecimalPart = ""] = clean.split(".");
-  const priceDecimals = config.priceDecimals;
-  const decimalSeparator = config.decimalSeparator;
-  const thousandSeparator = config.thousandSeparator;
+  // Formateamos la parte entera con el separador de miles de WooCommerce
+  const integerFormatted = String(amount).replace(
+    /\B(?=(\d{3})+(?!\d))/g,
+    config.thousandSeparator,
+  );
 
-  const integerPart = (rawIntegerPart || "0")
-    .replace(/^0+(?=\d)/, "")
-    .replace(/\B(?=(\d{3})+(?!\d))/g, thousandSeparator);
-
-  let formattedValue = integerPart;
-
-  if (forceDecimals && priceDecimals > 0) {
-    formattedValue = `${integerPart}${decimalSeparator}${`${rawDecimalPart}${"0".repeat(
-      priceDecimals,
-    )}`.substring(0, priceDecimals)}`;
-  } else if (hasDecimal && priceDecimals > 0) {
-    formattedValue = `${integerPart}${decimalSeparator}${rawDecimalPart.substring(
-      0,
-      priceDecimals,
-    )}`;
+  // Si WooCommerce requiere mostrar decimales, concatenamos los ceros
+  if (config.priceDecimals > 0) {
+    const zeros = "0".repeat(config.priceDecimals);
+    return `${integerFormatted}${config.decimalSeparator}${zeros}`;
   }
 
-  debugLog(config, "formatAmount", {
-    value,
-    clean,
-    forceDecimals,
-    priceDecimals,
-    decimalSeparator,
-    thousandSeparator,
-    formattedValue,
-  });
-
-  return formattedValue;
+  return integerFormatted;
 };
 
 const formatStoredAmount = (value = "", config = DEFAULT_FORMAT_CONFIG) => {
-  return parseAmount(value, config) > 0
-    ? formatAmount(value, true, config)
-    : "";
+  return parseAmount(value, config) > 0 ? formatAmount(value, config) : "";
 };
 
 const OpenpayPropinaCheckout = ({ extensions = {}, context = "" }) => {
   const data = extensions?.[NAMESPACE] || {};
   const formatConfig = getFormatConfig(data);
-  const maxAmount = parseAmount(data.max_amount || "0", formatConfig);
-  const maxAmountFormatted =
-    data.max_amount_formatted || data.max_amount || "0";
   const extensionCartUpdate = window?.wc?.blocksCheckout?.extensionCartUpdate;
 
   const [amount, setAmount] = useState(
     formatStoredAmount(data.amount, formatConfig),
   );
+  const inputRef = useRef(null);
   const isEditingRef = useRef(false);
   const [errorMessage, setErrorMessage] = useState("");
   const timerRef = useRef(null);
 
   useEffect(() => {
-    debugLog(formatConfig, "Store API data changed", {
-      amount: data.amount,
-      maxAmount: data.max_amount,
-      maxAmountFormatted: data.max_amount_formatted,
-      formatConfig,
-      isEditing: isEditingRef.current,
-    });
-
     if (!isEditingRef.current) {
       setAmount(formatStoredAmount(data.amount, formatConfig));
     }
   }, [
     data.amount,
     data.max_amount,
-    data.max_amount_formatted,
     data.price_decimals,
     data.decimal_separator,
     data.thousand_separator,
@@ -186,130 +110,116 @@ const OpenpayPropinaCheckout = ({ extensions = {}, context = "" }) => {
     return null;
   }
 
-  const updateTip = (value) => {
+  const updateTip = (cleanValue) => {
     clearTimeout(timerRef.current);
 
-    const cleanValue = cleanAmount(value, formatConfig) || "0";
-
-    debugLog(formatConfig, "updateTip scheduled", {
-      value,
-      cleanValue,
-    });
-
     timerRef.current = setTimeout(() => {
-      debugLog(formatConfig, "extensionCartUpdate sent", {
-        namespace: NAMESPACE,
-        amount: cleanValue,
-      });
-
       extensionCartUpdate({
         namespace: NAMESPACE,
         data: {
-          amount: cleanValue,
+          amount: cleanValue, // Se envía únicamente la parte entera limpia
         },
       });
     }, 500);
   };
 
+  // 3. CURSOR: Mantiene el cursor siempre antes del punto decimal
+  const constrainCursor = (event) => {
+    const input = event.target;
+    const value = input.value || "";
+    const decIndex = value.indexOf(formatConfig.decimalSeparator);
+
+    // Si el usuario hace clic o navega dentro de los decimales ".00", regresamos el cursor a los enteros
+    if (decIndex !== -1 && input.selectionStart > decIndex) {
+      input.setSelectionRange(decIndex, decIndex);
+    }
+  };
+
   const handleChange = (event) => {
-    let value = event.target.value;
+    const input = event.target;
+    const rawValue = input.value;
+    const selectionStart = input.selectionStart || 0;
+
+    // Contamos dígitos limpios solo en la parte entera antes de la posición del cursor
+    const integerPartBeforeCursor = rawValue
+      .slice(0, selectionStart)
+      .split(formatConfig.decimalSeparator)[0];
+    const digitsBeforeCursor = integerPartBeforeCursor.replace(
+      /\D/g,
+      "",
+    ).length;
+
+    const cleanValue = cleanAmount(rawValue, formatConfig);
+    const numericValue = parseAmount(cleanValue, formatConfig);
     const maxAmount = parseAmount(data.max_amount, formatConfig);
 
-    if (value === "") {
-      debugLog(formatConfig, "handleChange empty", {
-        value,
-      });
-
+    if (rawValue === "" || cleanValue === "") {
       setErrorMessage("");
       setAmount("");
       updateTip("0");
       return;
     }
 
-    let numericValue = parseAmount(value, formatConfig);
+    const wasInvalid = maxAmount > 0 && numericValue > maxAmount;
 
-    if (numericValue < 0) {
+    if (wasInvalid) {
+      setErrorMessage(
+        `La propina no puede ser mayor que el importe total: ${
+          data.max_amount_formatted || formatAmount(maxAmount, formatConfig)
+        }.`,
+      );
       return;
     }
 
-    const wasClamped = maxAmount > 0 && numericValue > maxAmount;
+    setErrorMessage("");
 
-    if (wasClamped) {
-      value = String(maxAmount);
-      numericValue = maxAmount;
-
-      setErrorMessage(
-        `La propina no puede ser mayor que el importe total de la venta: ${
-          data.max_amount_formatted || formatAmount(value, true, formatConfig)
-        }.`,
-      );
-    } else {
-      setErrorMessage("");
-    }
-
-    const formattedValue = formatAmount(value, false, formatConfig);
-
-    debugLog(formatConfig, "handleChange", {
-      rawValue: event.target.value,
-      numericValue,
-      maxAmount,
-      wasClamped,
-      formattedValue,
-    });
-
+    // Formatear valor actual
+    const formattedValue = formatAmount(cleanValue, formatConfig);
     setAmount(formattedValue);
-    updateTip(formattedValue);
+    updateTip(cleanValue);
+
+    // Restauramos el cursor en la posición exacta dentro del grupo de enteros
+    requestAnimationFrame(() => {
+      if (!inputRef.current) return;
+
+      let newCursorPos = 0;
+      let digitsSeen = 0;
+
+      while (
+        newCursorPos < formattedValue.length &&
+        digitsSeen < digitsBeforeCursor
+      ) {
+        if (/\d/.test(formattedValue[newCursorPos])) {
+          digitsSeen++;
+        }
+        newCursorPos++;
+      }
+
+      inputRef.current.setSelectionRange(newCursorPos, newCursorPos);
+    });
   };
 
   const handleBlur = () => {
-    clearTimeout(timerRef.current);
     isEditingRef.current = false;
+    clearTimeout(timerRef.current);
 
-    let value = cleanAmount(amount, formatConfig);
-    const maxAmount = parseAmount(data.max_amount, formatConfig);
-    const numericValue = parseAmount(value, formatConfig);
+    const cleanValue = cleanAmount(amount, formatConfig);
+    const numericValue = parseAmount(cleanValue, formatConfig);
 
-    debugLog(formatConfig, "handleBlur before validation", {
-      amount,
-      value,
-      numericValue,
-      maxAmount,
-    });
-
-    if (value === "" || numericValue <= 0) {
+    if (cleanValue === "" || numericValue <= 0) {
       setAmount("");
       setErrorMessage("");
-
       extensionCartUpdate({
         namespace: NAMESPACE,
-        data: {
-          amount: "0",
-        },
+        data: { amount: "0" },
       });
-
       return;
     }
 
-    if (maxAmount > 0 && numericValue > maxAmount) {
-      value = data.max_amount || String(maxAmount);
-    }
-
-    const formattedValue = formatAmount(value, true, formatConfig);
-    const cleanValue = cleanAmount(formattedValue, formatConfig);
-
-    debugLog(formatConfig, "handleBlur formatted", {
-      value,
-      formattedValue,
-      cleanValue,
-    });
-
-    setAmount(formattedValue);
-
+    setAmount(formatAmount(cleanValue, formatConfig));
     extensionCartUpdate({
       namespace: NAMESPACE,
-      data: {
-        amount: cleanValue,
-      },
+      data: { amount: cleanValue },
     });
   };
 
@@ -324,28 +234,27 @@ const OpenpayPropinaCheckout = ({ extensions = {}, context = "" }) => {
         </label>
 
         <input
+          ref={inputRef}
           id="openpay-propina"
           type="text"
-          inputMode="decimal"
+          className="wc-block-components-totals-item__value"
+          inputMode="numeric"
+          pattern="[0-9]*"
           autoComplete="off"
           value={amount}
           onChange={handleChange}
           onBlur={handleBlur}
-          onFocus={() => {
+          onFocus={(e) => {
             isEditingRef.current = true;
-
-            debugLog(formatConfig, "input focus", {
-              amount,
-              dataAmount: data.amount,
-              maxAmount: data.max_amount,
-              formatConfig,
-            });
+            constrainCursor(e);
           }}
-          placeholder=""
+          onClick={constrainCursor}
+          onKeyUp={constrainCursor}
+          placeholder="0"
           style={{
             width: "120px",
             maxWidth: "120px",
-            textAlign: "center",
+            textAlign: "right",
             border: 0,
             borderBottom: "1px solid currentColor",
             borderRadius: 0,
@@ -384,9 +293,7 @@ const registerOpenpayPropinaCheckout = () => {
   const ExperimentalOrderMeta =
     window?.wc?.blocksCheckout?.ExperimentalOrderMeta;
 
-  if (!registerPlugin || !ExperimentalOrderMeta) {
-    return;
-  }
+  if (!registerPlugin || !ExperimentalOrderMeta) return;
 
   const render = () => (
     <ExperimentalOrderMeta>
