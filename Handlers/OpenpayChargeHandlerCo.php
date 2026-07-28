@@ -45,8 +45,8 @@ class OpenpayChargeHandlerCo
             $impoconsumo_amount = (float) OpenpayImpoconsumo::get_cart_impoconsumo_total();
         }
 
-        $has_iva = $iva_enabled && $iva_amount > 0;
-        $has_impoconsumo = $impoconsumo_enabled && $impoconsumo_amount > 0;
+        $has_iva = $iva_enabled;
+        $has_impoconsumo = $impoconsumo_enabled;
 
         if ($has_iva && $has_impoconsumo) {
             $base_amount = $order->get_total() - $iva_amount - $impoconsumo_amount;
