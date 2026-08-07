@@ -378,7 +378,8 @@ class WC_Openpay_Gateway extends WC_Payment_Gateway
     public function validate_fields()
     {
 
-        $this->logger->debug('validate_fields - ' . json_encode($_POST));
+        $sanitized_post = $this->sanitize_post_for_log(wp_unslash($_POST));
+        $this->logger->debug('validate_fields - ' . wp_json_encode($sanitized_post));
         if (empty($_POST['openpay_token'] || $_POST['openpay_selected_card'])) {
             wc_add_notice('Openpay token missing', 'error');
             return false;
@@ -435,7 +436,7 @@ class WC_Openpay_Gateway extends WC_Payment_Gateway
 
         $this->logger->info("[WC_Openpay_Gateway.process_payment] => openpay_payment_plan " . json_encode($openpay_payment_plan));
 
-        $this->logger->info('[WC_Openpay_Gateway.process_payment] => openpay_tokenized_card ' . json_encode($openpay_tokenized_card));
+        $this->logger->info('[WC_Openpay_Gateway.process_payment] => openpay_tokenized_card ' . wp_json_encode($this->mask_card_number_for_log($openpay_tokenized_card)));
 
         // we need it to get any order detailes
         $this->order = new WC_Order($order_id);
@@ -572,6 +573,101 @@ class WC_Openpay_Gateway extends WC_Payment_Gateway
             throw new Exception("Error en la transacción: No se pudo completar tu pago.");
         }
         $this->logger->info("[WC_Openpay_Gateway.cvvValidation end]");
+    }
+
+    /**
+     * Sanitizes posted checkout data before writing it to logs.
+     *
+     * @param mixed $post_data Raw posted data.
+     * @return mixed Sanitized data preserving original structure.
+     */
+    private function sanitize_post_for_log($post_data)
+    {
+        if (!is_array($post_data)) {
+            return $post_data;
+        }
+
+        $sanitized = [];
+
+        foreach ($post_data as $key => $value) {
+            $sanitized[$key] = $this->sanitize_field_for_log($key, $value);
+        }
+
+        return $sanitized;
+    }
+
+    /**
+     * Sanitizes a single field value based on its key.
+     *
+     * @param string|int $key   Field key.
+     * @param mixed      $value Field value.
+     * @return mixed Sanitized field value.
+     */
+    private function sanitize_field_for_log($key, $value)
+    {
+        if (is_array($value)) {
+            $sanitized_array = [];
+            foreach ($value as $nested_key => $nested_value) {
+                $sanitized_array[$nested_key] = $this->sanitize_field_for_log($nested_key, $nested_value);
+            }
+            return $sanitized_array;
+        }
+
+        $normalized_key = sanitize_key((string) $key);
+        $cvv_keys = ['openpay_card_cvc', 'openpay-card-cvc', 'cvv', 'cvv2', 'cvc'];
+        $card_number_keys = ['openpay-card-number', 'openpay_card_number', 'openpay_tokenized_card', 'card_number', 'credit_card_number', 'cc_number'];
+
+        if (in_array($normalized_key, $cvv_keys, true)) {
+            return $this->mask_cvv_for_log($value);
+        }
+
+        if (in_array($normalized_key, $card_number_keys, true)) {
+            return $this->mask_card_number_for_log($value);
+        }
+
+        return $value;
+    }
+
+    /**
+     * Masks CVV value for logging.
+     *
+     * @param mixed $cvv CVV value.
+     * @return string Masked CVV.
+     */
+    private function mask_cvv_for_log($cvv)
+    {
+        $cvv_string = trim((string) $cvv);
+        if ($cvv_string === '') {
+            return '';
+        }
+
+        return str_repeat('*', strlen($cvv_string));
+    }
+
+    /**
+     * Masks card number-like values for logging.
+     *
+     * Keeps only the first 4 characters and masks the rest.
+     *
+     * @param mixed $card_number Card number-like value.
+     * @return string Masked card value.
+     */
+    private function mask_card_number_for_log($card_number)
+    {
+        $card_string = trim((string) $card_number);
+        if ($card_string === '') {
+            return '';
+        }
+
+        $card_compact = preg_replace('/[^0-9A-Za-z]/', '', $card_string);
+        if ($card_compact === '') {
+            return $card_string;
+        }
+
+        $visible = substr($card_compact, 0, 4);
+        $masked_length = max(strlen($card_compact) - 4, 0);
+
+        return $visible . str_repeat('*', $masked_length);
     }
 
     public function process_admin_options()
