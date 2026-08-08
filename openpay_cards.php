@@ -292,6 +292,8 @@ function openpay_woocommerce_order_refunded($order_id, $refund_id)
 
 function get_type_card_openpay()
 {
+    openpay_validate_bin_ajax_request();
+
     $logger = wc_get_logger();
     $logger->info('[openpay_cards.get_type_card_openpay] => start');
     if (!class_exists('WC_Openpay_Bines_Consult')) {
@@ -301,6 +303,28 @@ function get_type_card_openpay()
     $openpayBinesConsult = new WC_Openpay_Bines_Consult();
     $openpayBinesConsult->getTypeCardOpenpay();
     $logger->info('[openpay_cards.get_type_card_openpay] => end');
+}
+
+function openpay_validate_bin_ajax_request()
+{
+    $logger = wc_get_logger();
+
+    if ('POST' !== ($_SERVER['REQUEST_METHOD'] ?? '')) {
+        $logger->error('[openpay_cards.openpay_validate_bin_ajax_request] => invalid request method');
+        wp_send_json(array(
+            'status' => 'error',
+            'card_type' => 'invalid request method'
+        ), 405);
+    }
+
+    $valid_nonce = check_ajax_referer('openpay_bin_lookup', 'security', false);
+    if (!$valid_nonce) {
+        $logger->error('[openpay_cards.openpay_validate_bin_ajax_request] => invalid nonce');
+        wp_send_json(array(
+            'status' => 'error',
+            'card_type' => 'invalid nonce'
+        ), 403);
+    }
 }
 
 function openpay_woocommerce_order_status_change_custom($order_id, $old_status, $new_status)

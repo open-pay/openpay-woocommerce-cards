@@ -365,6 +365,7 @@ class WC_Openpay_Gateway extends WC_Payment_Gateway
             'country' => $this->country,
             'installments' => $OpenpayInstallments->getInstallments(),
             'ajaxurl' => admin_url('admin-ajax.php'),
+            'bin_nonce' => wp_create_nonce('openpay_bin_lookup'),
             'save_cc_option' => $this->save_card_mode,
             'use_card_points' => $this->card_points
         );

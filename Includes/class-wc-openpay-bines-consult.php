@@ -10,7 +10,7 @@ class WC_Openpay_Bines_Consult {
 
         $logger     = wc_get_logger();
         $logger->info("[WC_Openpay_Bines_Consult.getTypeCardOpenpay] start");
-        $card_bin   = isset( $_POST['card_bin'] ) ? $_POST['card_bin'] : false;
+        $card_bin   = $this->getSanitizedCardBin();
         $logger->info("Bin: " . $card_bin);
         if($card_bin) {
             try {
@@ -23,10 +23,12 @@ class WC_Openpay_Bines_Consult {
                 $currency       = get_woocommerce_currency();
                 $logger->info("Pais: " . $country);
 
+                $safe_card_bin = rawurlencode($card_bin);
+
                 switch ($country) {
 
                     case 'MX':
-                        $path       = sprintf('/%s/bines/man/%s', $merchant_id, $card_bin);
+                        $path       = sprintf('/%s/bines/man/%s', $merchant_id, $safe_card_bin);
                         $cardInfo = OpenpayUtils::requestOpenpay($path, $country, $is_sandbox,null,null,$auth);
                         
                         wp_send_json(array(
@@ -38,7 +40,7 @@ class WC_Openpay_Bines_Consult {
 
                     case 'PE':
                         $logger->info("Entra a peru");
-                        $path       = sprintf('/%s/bines/%s/promotions', $merchant_id, $card_bin);
+                        $path       = sprintf('/%s/bines/%s/promotions', $merchant_id, $safe_card_bin);
                         $params     = array('amount' => $amount, 'currency' => $currency);
                         $cardInfo    = OpenpayUtils::requestOpenpay($path, $country, $is_sandbox);
 
@@ -52,7 +54,7 @@ class WC_Openpay_Bines_Consult {
                     break;
 
                     default:
-                        $path       = sprintf('/cards/validate-bin?bin=%s', $card_bin);
+                        $path       = sprintf('/cards/validate-bin?bin=%s', $safe_card_bin);
                         $cardInfo = OpenpayUtils::requestOpenpay($path, $country, $is_sandbox);
                         wp_send_json(array(
                             'status' => 'success',
@@ -72,5 +74,21 @@ class WC_Openpay_Bines_Consult {
             'card_type' => "credit card not found"
         ));
         $logger->info("[WC_Openpay_Bines_Consult.getTypeCardOpenpay] end");
+    }
+
+    private function getSanitizedCardBin()
+    {
+        if (!isset($_POST['card_bin'])) {
+            return false;
+        }
+
+        $card_bin = sanitize_text_field(wp_unslash($_POST['card_bin']));
+        $card_bin = preg_replace('/\D+/', '', $card_bin);
+
+        if (!preg_match('/^\d{6,8}$/', $card_bin)) {
+            return false;
+        }
+
+        return $card_bin;
     }
 }

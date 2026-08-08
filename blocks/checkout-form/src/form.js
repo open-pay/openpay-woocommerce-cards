@@ -235,6 +235,7 @@ const Form = (props) => {
             new URLSearchParams({
               action: "get_type_card_openpay",
               card_bin: openpayCardNumber.slice(0, 8),
+              security: settings.binNonce,
             }),
             {
               headers: {
