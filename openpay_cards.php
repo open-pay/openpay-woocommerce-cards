@@ -20,6 +20,7 @@
 use Automattic\WooCommerce\Internal\DataStores\Orders\CustomOrdersTableController;
 use Openpay\Resources\OpenpayCard;
 use OpenpayCards\Includes\OpenpayClient;
+use OpenpayCards\Services\OpenpayWebhookService;
 
 /*
  * This action hook registers WC_Openpay_Gateway class as a WooCommerce payment gateway
@@ -65,6 +66,7 @@ add_action('before_woocommerce_init', function () {
 
 /*3DS FUNCTION*/
 add_action('woocommerce_api_openpay_confirm', 'openpay_woocommerce_confirm', 10, 0);
+add_action('woocommerce_api_openpay_webhook', 'openpay_woocommerce_webhook', 10, 0);
 add_action('template_redirect', 'wc_custom_redirect_after_purchase', 0);
 
 /*Campo de IVA personalizado*/
@@ -125,6 +127,12 @@ function openpay_woocommerce_confirm()
     }
     $logger->info('[WC_Openpay_3d_secure.openpay_woocommerce_confirm] => end');
 }
+
+function openpay_woocommerce_webhook()
+{
+    OpenpayWebhookService::listener();
+}
+
 function wc_custom_redirect_after_purchase()
 {
     global $woocommerce;
@@ -195,6 +203,9 @@ function openpay_init_gateway()
     }
     if (!class_exists('WC_Openpay_Capture_Service')) {
         require_once(dirname(__FILE__) . "/Services/class-wc-openpay-capture-service.php");
+    }
+    if (!class_exists('\OpenpayCards\Services\OpenpayWebhookService')) {
+        require_once(dirname(__FILE__) . "/Services/OpenpayWebhookService.php");
     }
     /*if(!class_exists('Openpay3dSecure')) {
         require_once(dirname(__FILE__) . "/Services/PaymentSettings/Openpay3dSecure.php");
