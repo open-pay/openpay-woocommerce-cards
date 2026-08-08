@@ -92,8 +92,13 @@ class WC_Openpay_Capture_Service
     public function ajaxCaptureHandler()
     {
         $this->logger->info('[WC_Openpay_Capture_Service.ajaxCaptureHandler] start');
-        $order_id = $_POST['order_id'];
-        $amount = isset($_POST['amount']) ? $_POST['amount'] : 0;
+        if (!current_user_can('manage_woocommerce')) {
+            $this->logger->error('[WC_Openpay_Capture_Service.ajaxCaptureHandler] unauthorized user');
+            wp_send_json_error(array('message' => 'Unauthorized request.'), 403);
+        }
+
+        $order_id = isset($_POST['order_id']) ? absint($_POST['order_id']) : 0;
+        $amount = isset($_POST['amount']) ? floatval($_POST['amount']) : 0;
         $charge = null;
 
         $this->logger->info("AJAX Capture Handler [Order ID: " . $order_id . "] - Amount: [" . $amount . "]");

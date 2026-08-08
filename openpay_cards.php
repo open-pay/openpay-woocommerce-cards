@@ -117,7 +117,7 @@ function openpay_woocommerce_confirm()
             $logger->info('[WC_Openpay_3d_secure.openpay_woocommerce_confirm] => set_status => payment_complete');
         }
 
-        wp_redirect($openpay_cards->get_return_url($order));
+        wp_safe_redirect($openpay_cards->get_return_url($order));
     } catch (Exception $e) {
         $logger->error('[WC_Openpay_3d_secure.openpay_woocommerce_confirm] => error' . $e->getMessage());
         status_header(404);
