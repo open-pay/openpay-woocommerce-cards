@@ -329,18 +329,23 @@ function openpay_validate_bin_ajax_request()
 
 function openpay_woocommerce_order_status_change_custom($order_id, $old_status, $new_status)
 {
-    global $woocommerce;
-    $gateways = $woocommerce->payment_gateways->payment_gateways();
-    $gateway = $gateways['wc_openpay_gateway'];
-    if ($gateway->enabled === 'yes') {
-        $logger = wc_get_logger();
-        $logger->info('[openpay_cards.openpay_woocommerce_order_status_change_custom] => start');
-        $openpay_gateway = new WC_Openpay_Gateway();
-        $openpayInstance = $openpay_gateway->getOpenpayInstance();
-        $capture_service = new WC_Openpay_Capture_Service($openpay_gateway->settings['sandbox'], $openpay_gateway->settings['country'], $openpayInstance);
-        $capture_service->openpayWoocommerceOrderStatusChangeCustom($order_id, $old_status, $new_status);
-        $logger->info('[openpay_cards.openpay_woocommerce_order_status_change_custom] => end');
+    $order = wc_get_order($order_id);
+    if (!$order || $order->get_payment_method() !== 'wc_openpay_gateway') {
+        return;
     }
+
+    $gateways = WC()->payment_gateways()->payment_gateways();
+    $openpay_gateway = isset($gateways['wc_openpay_gateway']) ? $gateways['wc_openpay_gateway'] : null;
+    if (!$openpay_gateway || $openpay_gateway->enabled !== 'yes') {
+        return;
+    }
+
+    $logger = wc_get_logger();
+    $logger->info('[openpay_cards.openpay_woocommerce_order_status_change_custom] => start');
+    $openpayInstance = $openpay_gateway->getOpenpayInstance();
+    $capture_service = new WC_Openpay_Capture_Service($openpay_gateway->settings['sandbox'], $openpay_gateway->settings['country'], $openpayInstance);
+    $capture_service->openpayWoocommerceOrderStatusChangeCustom($order_id, $old_status, $new_status);
+    $logger->info('[openpay_cards.openpay_woocommerce_order_status_change_custom] => end');
 }
 
 function add_partial_capture_toggle($order)
