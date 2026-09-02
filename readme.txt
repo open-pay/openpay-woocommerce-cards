@@ -4,7 +4,7 @@ Tags: payment gateway, openpay
 Requires at least: 4.8
 Tested up to: 7.0.4
 Requires PHP: 7.4
-Stable tag: 3.1.0
+Stable tag: 3.2.0
 License: GNU General Public License v3.0
 License URI: http://www.gnu.org/licenses/gpl-3.0.html
 
@@ -16,6 +16,9 @@ For more information about this module go to:
 http://www.openpay.mx/docs/plugins/woocommerce.html
 
 == Changelog ==
+= 3.2.0 =
+* Enhancement. Alta automática de webhook Openpay desde configuración del plugin con endpoint estándar WooCommerce Cards (/wc-api/Openpay_Cards), control de no duplicados y autenticación Basic.
+* Fix. Procesamiento de webhook por order_id único (sin fallback por transaction_id), lectura de transaction.id desde data.transaction.id y manejo explícito de estados expired/cancelled.
 = 3.1.0 =
 Soporte de Taxes para Colombia
 = 3.0.4 =

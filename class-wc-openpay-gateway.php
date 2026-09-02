@@ -6,6 +6,7 @@ use OpenpayCards\Includes\OpenpayClient;
 use OpenpayCards\Services\OpenpayCustomerService;
 use OpenpayCards\Services\OpenpayChargeService;
 use OpenpayCards\Services\OpenpayCardService;
+use OpenpayCards\Services\OpenpayWebhookService;
 use OpenpayCards\Services\PaymentSettings\OpenpayInstallments;
 use OpenpayCards\Services\PaymentSettings\OpenpayPaymentSettingsValidation;
 use OpenpayCards\Services\PaymentSettings\Openpay3dSecure;
@@ -685,6 +686,7 @@ class WC_Openpay_Gateway extends WC_Payment_Gateway
         $settingsValidation = new OpenpayPaymentSettingsValidation();
         $settingsValidation->validateOpenpayCredentials();
         $settingsValidation->validateOpenpayCurrencies();
+        OpenpayWebhookService::register_webhook_if_needed($this);
     }
 
     public function getOpenpayInstance()
