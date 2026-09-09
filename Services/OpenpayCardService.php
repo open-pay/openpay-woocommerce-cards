@@ -51,7 +51,7 @@ class OpenpayCardService extends WC_Openpay_Gateway
 
         $list = array(array('value' => 'new', 'name' => 'Nueva tarjeta'));
         $this->logger->info('[OpenpayCardService.getCreditCardList] => cards_list ' . Json_encode($list));
-        // try {
+          try {
             $customer = OpenpayErrorHandler::catchOpenpayError(function () use ($customer_id) {
                return $customer = $this->openpay->customers->get($customer_id);
             });
@@ -63,10 +63,22 @@ class OpenpayCardService extends WC_Openpay_Gateway
             }
             $this->logger->info('[OpenpayCardService.getCreditCardList] end ');
             return $list;
-       // } catch (Exception $e) {
-       //     $this->logger->error($e->getMessage());
-       //     return $list;
-       // }
+        } catch (Exception $e) {
+            $this->logger->error('[OpenpayCardService.getCreditCardList] => ERROR ' . $e->getMessage());
+            $this->clearStoredCustomerId();
+            return $list;
+        }
+    }
+
+    private function clearStoredCustomerId()
+    {
+        if (!is_user_logged_in()) {
+            return;
+        }
+
+        $meta_key = $this->sandbox ? '_openpay_customer_test_id' : '_openpay_customer_live_id';
+        delete_user_meta(get_current_user_id(), $meta_key);
+        $this->logger->info('[OpenpayCardService.clearStoredCustomerId] => removed ' . $meta_key);
     }
 
     private function getCreditCards($customer)

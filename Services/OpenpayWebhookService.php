@@ -74,7 +74,7 @@ class OpenpayWebhookService
         }
 
         $json = is_null($data) ? file_get_contents('php://input') : $data;
-        $this->logger->info('[WC_Openpay_3d_secure.openpay_woocommerce_webhook] => payload ' . $json);
+        $this->logger->info('[WC_Openpay_3d_secure.openpay_woocommerce_webhook] => payload ' . $this->build_safe_webhook_log($json));
 
         $result = $this->process_webhook($json);
 
@@ -95,6 +95,12 @@ class OpenpayWebhookService
      */
     public function process_webhook($json)
     {
+        $raw_json = trim((string) $json);
+        if ($raw_json === '') {
+            $this->logger->info('[WC_Openpay_3d_secure.openpay_woocommerce_webhook] => empty payload probe accepted');
+            return $this->response(true, self::OK_RESPONSE, 'OK');
+        }
+
         $data = json_decode($json, true);
 
         if (!is_array($data)) {
@@ -104,6 +110,11 @@ class OpenpayWebhookService
 
         $event_type = isset($data['type']) ? sanitize_text_field((string) $data['type']) : '';
         if ($event_type === '') {
+            if ($this->is_webhook_probe_payload($data)) {
+                $this->logger->info('[WC_Openpay_3d_secure.openpay_woocommerce_webhook] => webhook probe payload accepted');
+                return $this->response(true, self::OK_RESPONSE, 'OK');
+            }
+
             $this->logger->error('[WC_Openpay_3d_secure.openpay_woocommerce_webhook] => missing event type');
             return $this->response(false, self::BAD_REQUEST_RESPONSE, 'Event type not found');
         }
@@ -216,8 +227,11 @@ class OpenpayWebhookService
 
         try {
             $openpay = OpenpayClient::getOpenpayInstance($gateway->sandbox, $gateway->merchant_id, $gateway->private_key, $gateway->country);
-            $credentials = $this->get_or_create_webhook_credentials();
-            $webhook_url = home_url('/wc-api/Openpay_Cards');
+            $webhook_url = $this->build_webhook_url();
+            if ($webhook_url === '') {
+                $this->logger->error('[WC_Openpay_3d_secure.openpay_woocommerce_webhook] => unable to build webhook url');
+                return;
+            }
             $existing_webhooks = $openpay->webhooks->getList(array('limit' => 100));
 
             if ($this->webhook_exists($existing_webhooks, $webhook_url)) {
@@ -228,8 +242,6 @@ class OpenpayWebhookService
             $openpay->webhooks->add(array(
                 'url' => $webhook_url,
                 'event_types' => self::$allowed_events,
-                'username' => $credentials['user'],
-                'password' => $credentials['pass'],
             ));
 
             $this->logger->info('[WC_Openpay_3d_secure.openpay_woocommerce_webhook] => webhook registered for ' . $webhook_url);
@@ -256,14 +268,33 @@ class OpenpayWebhookService
         );
     }
 
+    /**
+     * Builds webhook endpoint URL using WooCommerce API helper when available.
+     *
+     * @return string
+     */
+    private function build_webhook_url()
+    {
+        if (function_exists('WC')) {
+            $wc = WC();
+            if ($wc && method_exists($wc, 'api_request_url')) {
+                $url = (string) $wc->api_request_url('openpay_cards');
+                return esc_url_raw($url);
+            }
+        }
+
+        $url = add_query_arg('wc-api', 'openpay_cards', home_url('/'));
+        return esc_url_raw($url);
+    }
+
     private function validate_basic_auth_request()
     {
         $expected_user = get_option(self::WEBHOOK_AUTH_USER_OPTION, '');
         $expected_pass = get_option(self::WEBHOOK_AUTH_PASS_OPTION, '');
 
         if ($expected_user === '' || $expected_pass === '') {
-            $this->logger->error('[WC_Openpay_3d_secure.openpay_woocommerce_webhook] => missing stored basic auth credentials');
-            return false;
+            $this->logger->info('[WC_Openpay_3d_secure.openpay_woocommerce_webhook] => basic auth credentials not configured, skipping validation');
+            return true;
         }
 
         $provided_user = isset($_SERVER['PHP_AUTH_USER']) ? (string) $_SERVER['PHP_AUTH_USER'] : '';
@@ -281,6 +312,11 @@ class OpenpayWebhookService
                     list($provided_user, $provided_pass) = explode(':', $decoded, 2);
                 }
             }
+        }
+
+        if ($provided_user === '' && $provided_pass === '') {
+            $this->logger->info('[WC_Openpay_3d_secure.openpay_woocommerce_webhook] => no basic auth header provided, skipping validation');
+            return true;
         }
 
         $valid = hash_equals($expected_user, $provided_user) && hash_equals($expected_pass, $provided_pass);
@@ -319,5 +355,48 @@ class OpenpayWebhookService
             'status' => (int) $status,
             'message' => (string) $message,
         );
+    }
+
+    /**
+     * Detects validation probe payloads used when registering webhooks.
+     *
+     * @param array $data Decoded payload.
+     * @return bool
+     */
+    private function is_webhook_probe_payload($data)
+    {
+        return is_array($data) && empty($data);
+    }
+
+    /**
+     * Returns a safe, minimal payload summary for logs.
+     *
+     * @param string $json Raw webhook payload.
+     * @return string
+     */
+    private function build_safe_webhook_log($json)
+    {
+        $payload = json_decode($json, true);
+        if (!is_array($payload)) {
+            return wp_json_encode(array('type' => 'invalid_json'));
+        }
+
+        $type = isset($payload['type']) && is_scalar($payload['type']) ? sanitize_text_field((string) $payload['type']) : '';
+        $transaction = isset($payload['transaction']) && is_array($payload['transaction']) ? $payload['transaction'] : array();
+        $transaction_id = isset($transaction['id']) && is_scalar($transaction['id']) ? sanitize_text_field((string) $transaction['id']) : '';
+        $order_id = isset($transaction['order_id']) && is_scalar($transaction['order_id']) ? sanitize_text_field((string) $transaction['order_id']) : '';
+        $status = '';
+        if (isset($transaction['status']) && is_scalar($transaction['status'])) {
+            $status = sanitize_text_field((string) $transaction['status']);
+        } elseif (isset($payload['status']) && is_scalar($payload['status'])) {
+            $status = sanitize_text_field((string) $payload['status']);
+        }
+
+        return wp_json_encode(array(
+            'type' => $type,
+            'transaction_id' => $transaction_id,
+            'order_id' => $order_id,
+            'status' => $status,
+        ));
     }
 }

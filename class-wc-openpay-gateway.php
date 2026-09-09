@@ -686,7 +686,9 @@ class WC_Openpay_Gateway extends WC_Payment_Gateway
         $settingsValidation = new OpenpayPaymentSettingsValidation();
         $settingsValidation->validateOpenpayCredentials();
         $settingsValidation->validateOpenpayCurrencies();
-        OpenpayWebhookService::register_webhook_if_needed($this);
+        
+        $gateway_with_fresh_settings = new self();
+        OpenpayWebhookService::register_webhook_if_needed($gateway_with_fresh_settings);
     }
 
     public function getOpenpayInstance()
