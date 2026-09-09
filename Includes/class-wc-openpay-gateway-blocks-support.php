@@ -117,6 +117,7 @@ final class WC_Openpay_Gateway_Blocks_Support extends AbstractPaymentMethodType
             'savedCardsList' => $cards_service->getCreditCardList(),
             'userLoggedIn' => is_user_logged_in(),
             'ajaxurl' => admin_url('admin-ajax.php'),
+            'binNonce' => wp_create_nonce('openpay_bin_lookup'),
         );
     }
 
