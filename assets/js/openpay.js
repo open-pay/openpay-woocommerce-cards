@@ -393,6 +393,7 @@ jQuery(document).ready(function () {
       data: {
         action: "get_type_card_openpay",
         card_bin: cardBin,
+        security: openpay_params.bin_nonce,
       },
       beforeSend: function () {
         jQuery("#openpay_cards").css("opacity", "0.5");
