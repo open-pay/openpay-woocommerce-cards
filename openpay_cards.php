@@ -9,6 +9,10 @@
  * Developer: Openpay
  * Text Domain: openpay-cards
  *
+ * Requires at least: 4.8
+ * Tested up to: 7.0.7
+ * Requires PHP: 7.4
+ *
  * WC requires at least: 3.0
  * WC tested up to: 11.0.1
  *
